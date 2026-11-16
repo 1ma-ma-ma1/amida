@@ -2,7 +2,32 @@
   "use strict";
   const $ = (id) => document.getElementById(id);
   const config = window.SALON_CONFIG;
-  const choices = [...document.querySelectorAll(".choice")];
+  const characters = [
+    ["リーフィ", "leaf"], ["モコ", "cloud"], ["コロン", "nut"],
+    ["ルル", "petal"], ["しずく", "dew"]
+  ];
+  const rewards = [["✨", "きらめき"], ["🪎", "宝箱"], ["🪙", "コイン"], ["🎫", "クーポン"], ["🍬", "キャンディ"]];
+  const walker = $("walker");
+  function mascot(shape) {
+    const avatar = document.createElement("span");
+    avatar.className = "mascot mascot--" + shape;
+    avatar.setAttribute("aria-hidden", "true");
+    avatar.innerHTML = '<span class="mascot-feet"></span><span class="mascot-body"><span class="mascot-face"></span></span>';
+    return avatar;
+  }
+  const choices = characters.map(([name, shape], index) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "choice";
+    button.dataset.index = index;
+    button.setAttribute("aria-label", (index + 1) + "番の" + name + "を選ぶ");
+    const caption = document.createElement("span");
+    caption.className = "character-name";
+    caption.textContent = (index + 1) + " · " + name;
+    button.append(mascot(shape), caption);
+    return button;
+  });
+  document.querySelector(".choices").append(...choices);
   const startButton = $("start");
   const dialog = $("result-dialog");
   let board, selected = null, state = "loading";
@@ -11,7 +36,9 @@
     $("instruction").textContent = "設定を確認してください。特典は5つの名称と説明が必要です。";
     return;
   }
-  const storageKey = `${config.demo ? "demo" : "live"}:${config.campaignId}`;
+  const storageKey = "live:" + config.campaignId;
+  $("participation-note").textContent = config.demo ? "テスト期間中は何度でも引き直せます。" : "参加はこのブラウザで1回限り。再アクセスで結果を確認できます。";
+  $("retry").hidden = !config.demo;
   $("salon-name").textContent = config.salonName;
   $("footer-name").textContent = config.salonName;
   document.title = `癒やしのあみだくじ | ${config.salonName}`;
@@ -35,14 +62,16 @@
     };
     for (let i = 0; i < 5; i++) line(50 + 100 * i, 0, 50 + 100 * i, 300);
     board.bridges.forEach(b => line(50 + 100 * b.col, b.y, 150 + 100 * b.col, b.y));
+    walker.hidden = true;
     $("trace").removeAttribute("d");
     $("trace").style.strokeDasharray = "none";
     $("trace").style.strokeDashoffset = "0";
     $("destinations").replaceChildren(...Array.from({ length: 5 }, (_, i) => {
       const cell = document.createElement("div");
       cell.className = "destination";
-      cell.textContent = "✧";
-      cell.setAttribute("aria-label", `到着地点${i + 1}：特典はお楽しみ`);
+      const [icon, label] = rewards[(board.icons || board.prizes)[i]];
+      cell.textContent = icon;
+      cell.setAttribute("aria-label", "到着地点" + (i + 1) + "：" + label);
       return cell;
     }));
     choices.forEach(b => {
@@ -51,6 +80,62 @@
       b.setAttribute("aria-pressed", String(active));
     });
   }
+  function newDraw(focus = false) {
+    board = Amida.createBoard();
+    selected = null;
+    state = "choosing";
+    renderBoard();
+    step(1);
+    choices.forEach(button => button.disabled = false);
+    $("instruction").textContent = "お好きなキャラクターを選んでください";
+    startButton.textContent = "キャラクターを選んでください →";
+    startButton.disabled = true;
+    if (focus) choices[0].focus();
+  }
+
+  async function animateRoute(trace, shape) {
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const length = trace.getTotalLength();
+    const moves = [
+      { gait: "walk", share: 0.24, duration: 890 },
+      { gait: "run", share: 0.31, duration: 550 },
+      { gait: "jump", share: 0.16, duration: 600 },
+      { gait: "walk", share: 0.29, duration: 1000 }
+    ];
+    if (Math.random() < 0.5) [moves[1], moves[2]] = [moves[2], moves[1]];
+    const offset = (Math.random() - 0.5) * 0.12;
+    moves[0].share += offset;
+    moves[3].share -= offset;
+    walker.replaceChildren(mascot(shape));
+    walker.hidden = false;
+    trace.style.strokeDasharray = String(length);
+    function place(distance) {
+      const point = trace.getPointAtLength(distance);
+      walker.style.left = (point.x / 5) + "%";
+      walker.style.top = (point.y / 3) + "%";
+      trace.style.strokeDashoffset = String(length - distance);
+    }
+    let distance = 0;
+    place(distance);
+    for (const move of moves) {
+      walker.dataset.motion = move.gait;
+      await new Promise(resolve => {
+        let firstFrame;
+        function frame(now) {
+          firstFrame ??= now;
+          const progress = Math.min(1, (now - firstFrame) / move.duration);
+          place(distance + length * move.share * progress);
+          if (progress < 1) requestAnimationFrame(frame);
+          else resolve();
+        }
+        requestAnimationFrame(frame);
+      });
+      distance += length * move.share;
+    }
+    place(length);
+    delete walker.dataset.motion;
+  }
+
   function failClosed() {
     state = "error";
     choices.forEach(b => b.disabled = true);
@@ -70,26 +155,21 @@
     trace.setAttribute("d", result.path);
     if (animate) {
       step(2);
-      const length = trace.getTotalLength();
-      trace.style.strokeDasharray = String(length);
-      const duration = matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 2400;
-      if (duration && typeof trace.animate === "function") {
-        const animation = trace.animate([{ strokeDashoffset: length }, { strokeDashoffset: 0 }], { duration, easing: "linear", fill: "forwards" });
-        try { await animation.finished; } catch (_) { /* Saved result remains authoritative. */ }
-        animation.cancel();
-      }
+      await animateRoute(trace, characters[selected][1]);
     }
     trace.style.strokeDashoffset = "0";
     const benefit = record.benefit;
     const destination = $("destinations").children[result.end];
     destination.classList.add("won");
-    destination.textContent = benefit.title;
+    const [icon] = rewards[(board.icons || board.prizes)[result.end]];
+    destination.textContent = icon + " " + benefit.title;
+    $("result-icon").textContent = icon;
     destination.setAttribute("aria-label", `結果：${benefit.title}`);
     $("result-title").textContent = benefit.title;
     $("result-description").textContent = benefit.description;
     $("result-date").textContent = `抽選日：${new Date(record.drawnAt).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })}`;
     $("result-disclaimer").textContent = config.demo ? "現在はお試し版です。実際の特典内容は後日ご案内します。" : "この画面をスタッフにお見せください。";
-    $("instruction").textContent = `参加済みです。あなたの結果は「${benefit.title}」。`;
+    $("instruction").textContent = characters[selected][0] + "が「" + benefit.title + "」に到着しました。";
     state = "complete";
     step(3);
     startButton.textContent = "獲得済みの結果をみる →";
@@ -100,8 +180,8 @@
     if (state !== "choosing") return;
     selected = Number(button.dataset.index);
     choices.forEach(b => { const active = b === button; b.classList.toggle("selected", active); b.setAttribute("aria-pressed", String(active)); });
-    $("instruction").textContent = `${selected + 1}番を選びました。くじを引けるのは1回です。`;
-    startButton.textContent = "この数字で、くじを引く →";
+    $("instruction").textContent = characters[selected][0] + "を選びました。";
+    startButton.textContent = "このキャラクターで、くじを引く →";
     startButton.disabled = false;
   }));
   startButton.addEventListener("click", async () => {
@@ -115,27 +195,29 @@
     try {
       const result = Amida.route(selected, board.bridges);
       const candidate = { version: 1, board, selected, benefit: { ...config.benefits[board.prizes[result.end]] }, drawnAt: new Date().toISOString() };
-      // Commit BEFORE animation: reloading mid-animation restores the same result.
-      const claim = await DrawStore.claim(storageKey, candidate);
+      // Live draws are saved before animation so a reload restores the same result.
+      const claim = config.demo ? { record: candidate, fresh: true } : await DrawStore.claim(storageKey, candidate);
       await showRecord(claim.record, claim.fresh);
     } catch (_) { failClosed(); }
   });
   $("close-result").addEventListener("click", () => dialog.close());
-  dialog.addEventListener("close", () => startButton.focus());
+  $("retry").addEventListener("click", () => {
+    if (!config.demo || state !== "complete") return;
+    dialog.close();
+    newDraw(true);
+  });
+  dialog.addEventListener("close", () => { if (state === "complete") startButton.focus(); });
   async function init() {
     try {
+      if (config.demo) { newDraw(); return; }
       $("instruction").textContent = "参加記録を確認しています…";
       const record = await DrawStore.read(storageKey);
       if (record) { await showRecord(record); return; }
-      board = Amida.createBoard();
-      renderBoard();
-      state = "choosing";
-      choices.forEach(b => b.disabled = false);
-      $("instruction").textContent = "お好きな数字をひとつ選んでください";
+      newDraw();
     } catch (_) { failClosed(); }
   }
   async function sync() {
-    if (state !== "choosing") return;
+    if (config.demo || state !== "choosing") return;
     try {
       const record = await DrawStore.read(storageKey);
       if (record && state === "choosing") await showRecord(record, false, false);

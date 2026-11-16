@@ -10,12 +10,15 @@
   }
   function createBoard() {
     const bridges = Array.from({ length: 12 }, (_, i) => ({ col: randomInt(COUNT - 1), y: 24 + i * 23 }));
+    return { bridges, prizes: shuffleSlots(), icons: shuffleSlots() };
+  }
+  function shuffleSlots() {
     const prizes = [0, 1, 2, 3, 4];
     for (let i = prizes.length - 1; i > 0; i--) {
       const j = randomInt(i + 1);
       [prizes[i], prizes[j]] = [prizes[j], prizes[i]];
     }
-    return { bridges, prizes };
+    return prizes;
   }
   function route(start, bridges) {
     if (!Number.isInteger(start) || start < 0 || start >= COUNT) throw new RangeError("Invalid start");

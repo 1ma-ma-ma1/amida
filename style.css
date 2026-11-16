@@ -5,3 +5,124 @@
 @media(max-width:760px){.site-header{padding:20px 22px}.brand{font-size:12px;gap:9px}.header-note{display:none}main{display:flex;flex-direction:column;gap:28px;padding:0 20px;margin:10px auto 35px;max-width:540px}.intro{text-align:center;padding-top:4px;width:100%}.intro>.eyebrow{justify-content:center;font-size:9px;margin-bottom:12px}h1{font-size:32px;line-height:1.55;margin-bottom:15px}.intro-copy{font-size:11px;line-height:2}.desktop-break{display:none}.botanical,.gift-note{display:none}.game-card{width:100%;padding:24px 20px 20px;border-radius:18px}.card-heading h2{font-size:21px}.steps{margin-top:20px}.instruction{font-size:10px}.choice{width:43px;height:43px}#ladder{height:220px}.howto{max-width:500px;margin:0 auto;padding:24px 20px;align-items:flex-start;flex-direction:column;gap:13px}.howto>.eyebrow{margin-bottom:2px}.howto>div{gap:14px}footer{max-width:500px;padding:0 20px;margin:22px auto;gap:12px;flex-wrap:wrap;font-size:9px}.small-note{font-size:9px}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
 :root{--bg:#f6efe5;--paper:#fffbf5;--ink:#53483b;--muted:#897c6a;--green:#628344;--line:#d9d8c0;--gold:#b08b53}.accent{color:#7e9a56}.game-card{border-color:#e7dccb}.participation-note{text-align:center;font-size:10px;color:#867963;margin:10px 0 0}.botanical svg{filter:sepia(.12) saturate(1.35)}.result-disclaimer{margin-top:16px}.instruction{overflow-wrap:anywhere}.choice{min-width:44px;min-height:44px}
+
+/* Mascots: each body, tuft and palette is shared by the picker and the walker. */
+.choice {
+  display: grid;
+  justify-items: center;
+  align-content: end;
+  gap: 4px;
+  width: calc(100% - 3px);
+  height: 67px;
+  padding: 6px 1px 4px;
+  border-radius: 12px;
+  font: inherit;
+}
+.choice.selected { background: #e2ecd4; color: #344a29; box-shadow: none; border-color: var(--green); }
+.character-name { font-size: clamp(8px, 2.2vw, 11px); line-height: 1.25; overflow-wrap: anywhere; }
+.ladder-stage { position: relative; margin-top: 10px; }
+.ladder-stage #ladder { margin-top: 0; }
+#walker { position: absolute; z-index: 1; transform: translate(-50%, -85%); pointer-events: none; }
+.mascot {
+  --skin: #afca78;
+  --detail: #739d54;
+  --edge: #536344;
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 36px;
+}
+.mascot-body {
+  display: block;
+  position: absolute;
+  inset: 9px 2px 5px;
+  background: var(--skin);
+  border: 1.4px solid var(--edge);
+  border-radius: 55% 55% 47% 47%;
+  box-shadow: inset 0 -4px #ffffff54;
+}
+.mascot-body::before {
+  content: "";
+  position: absolute;
+  width: 13px;
+  height: 8px;
+  top: -7px;
+  left: 13px;
+  background: var(--detail);
+  border: 1.2px solid var(--edge);
+  border-radius: 90% 0 90% 0;
+  transform: rotate(-19deg);
+}
+.mascot-face {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  top: 8px;
+  left: 8px;
+  border-radius: 50%;
+  background: #42382e;
+  box-shadow: 11px 0 #42382e, -4px 4px #f5bda5, 15px 4px #f5bda5;
+}
+.mascot-face::after {
+  content: "";
+  position: absolute;
+  top: 4px;
+  left: 5px;
+  width: 4px;
+  height: 2px;
+  border: solid #42382e;
+  border-width: 0 0 1px;
+  border-radius: 0 0 50% 50%;
+}
+.mascot-feet::before, .mascot-feet::after {
+  content: "";
+  position: absolute;
+  bottom: 2px;
+  left: 6px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--detail);
+  border: 1px solid var(--edge);
+}
+.mascot-feet::after { left: auto; right: 6px; }
+.mascot--cloud { --skin: #fff0d3; --edge: #a88661; --detail: #eed2a2; }
+.mascot--cloud .mascot-body { border-radius: 40% 50% 40% 45%; }
+.mascot--cloud .mascot-body::before { width: 18px; height: 10px; left: 5px; border-radius: 55% 65% 28% 35%; transform: none; }
+.mascot--nut { --skin: #dfac7f; --edge: #986244; --detail: #ad744e; }
+.mascot--nut .mascot-body { border-radius: 50% 50% 48% 48%; }
+.mascot--nut .mascot-body::before { width: 23px; height: 8px; top: -6px; left: 2px; border-radius: 70% 70% 40% 40%; transform: none; }
+.mascot--petal { --skin: #f1bfc9; --edge: #9a6172; --detail: #d88ba6; }
+.mascot--petal .mascot-body::before { width: 10px; height: 11px; left: 9px; top: -9px; border-radius: 55% 55% 20% 50%; transform: rotate(-26deg); box-shadow: 7px 2px 0 -1px var(--detail); }
+.mascot--dew { --skin: #b3d9df; --edge: #5b8f95; --detail: #83b6c3; }
+.mascot--dew .mascot-body { border-radius: 65% 45% 55% 52%; }
+.mascot--dew .mascot-body::before { width: 8px; height: 10px; left: 11px; top: -8px; border-radius: 70% 10% 65% 55%; transform: rotate(-24deg); }
+#walker[data-motion="walk"] .mascot { animation: mascot-stride .32s ease-in-out infinite alternate; }
+#walker[data-motion="run"] .mascot { animation: mascot-stride .13s ease-in-out infinite alternate; }
+#walker[data-motion="jump"] .mascot { animation: mascot-jump .6s ease-in-out both; }
+#walker[data-motion="walk"] .mascot-feet::before,
+#walker[data-motion="walk"] .mascot-feet::after { animation: mascot-step .32s ease-in-out infinite alternate; }
+#walker[data-motion="run"] .mascot-feet::before,
+#walker[data-motion="run"] .mascot-feet::after { animation: mascot-step .13s ease-in-out infinite alternate; }
+#walker .mascot-feet::after { animation-direction: alternate-reverse !important; }
+@keyframes mascot-stride { from { transform: translateY(0) rotate(-7deg); } to { transform: translateY(-4px) rotate(7deg); } }
+@keyframes mascot-step { from { transform: translateX(-3px); } to { transform: translate(3px, -4px); } }
+@keyframes mascot-jump {
+  0%, 100% { transform: translateY(0); }
+  15%, 85% { transform: translateY(1px) scaleY(.88); }
+  50% { transform: translateY(-26px) scaleY(1.06); }
+}
+.howto { display: block; }
+.howto h2 { font-size: 17px; }
+.howto ul { padding-left: 1.45em; margin: 9px 0 0; color: var(--ink); font-size: 13px; }
+.retry-button {
+  min-height: 44px;
+  margin-top: 12px;
+  padding: 6px 18px;
+  border: 1px solid #c4cdb8;
+  border-radius: 8px;
+  color: var(--ink);
+  background: #f0f3e8;
+}
+@media (max-width: 760px) { .choice { height: 63px; } }
+@media (prefers-reduced-motion: reduce) { #walker .mascot { animation: none; } }
