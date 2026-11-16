@@ -6,7 +6,22 @@
     ["リーフィ", "leaf"], ["モコ", "cloud"], ["コロン", "nut"],
     ["ルル", "petal"], ["しずく", "dew"]
   ];
-  const rewards = [["✨", "きらめき"], ["🪎", "宝箱"], ["🪙", "コイン"], ["🎫", "クーポン"], ["🍬", "キャンディ"]];
+  const rewards = [
+    ["star", "きらめき"], ["chest", "宝箱"], ["coin", "コイン"],
+    ["ticket", "クーポン"], ["candy", "キャンディ"]
+  ];
+  function rewardArt(column, decorative = false) {
+    const [shape, label] = rewards[(board.icons || board.prizes)[column]];
+    const art = document.createElement("span");
+    art.className = "reward-art reward-art--" + shape;
+    art.append(document.createElement("i"));
+    if (decorative) art.setAttribute("aria-hidden", "true");
+    else {
+      art.setAttribute("role", "img");
+      art.setAttribute("aria-label", label);
+    }
+    return art;
+  }
   const walker = $("walker");
   function mascot(shape) {
     const avatar = document.createElement("span");
@@ -30,7 +45,7 @@
   document.querySelector(".choices").append(...choices);
   const startButton = $("start");
   const dialog = $("result-dialog");
-  let board, selected = null, state = "loading";
+  let board, selected = null, completedDraw = null, state = "loading";
   choices.forEach(b => b.disabled = true);
   if (!config || typeof config.salonName !== "string" || typeof config.demo !== "boolean" || typeof config.campaignId !== "string" || !config.campaignId.trim() || !Array.isArray(config.benefits) || config.benefits.length !== 5 || config.benefits.some(b => !b || typeof b.title !== "string" || !b.title.trim() || typeof b.description !== "string")) {
     $("instruction").textContent = "設定を確認してください。特典は5つの名称と説明が必要です。";
@@ -69,9 +84,8 @@
     $("destinations").replaceChildren(...Array.from({ length: 5 }, (_, i) => {
       const cell = document.createElement("div");
       cell.className = "destination";
-      const [icon, label] = rewards[(board.icons || board.prizes)[i]];
-      cell.textContent = icon;
-      cell.setAttribute("aria-label", "到着地点" + (i + 1) + "：" + label);
+      cell.setAttribute("role", "listitem");
+      cell.append(rewardArt(i));
       return cell;
     }));
     choices.forEach(b => {
@@ -83,6 +97,7 @@
   function newDraw(focus = false) {
     board = Amida.createBoard();
     selected = null;
+    completedDraw = null;
     state = "choosing";
     renderBoard();
     step(1);
@@ -161,10 +176,13 @@
     const benefit = record.benefit;
     const destination = $("destinations").children[result.end];
     destination.classList.add("won");
-    const [icon] = rewards[(board.icons || board.prizes)[result.end]];
-    destination.textContent = icon + " " + benefit.title;
-    $("result-icon").textContent = icon;
-    destination.setAttribute("aria-label", `結果：${benefit.title}`);
+    completedDraw = {
+      end: result.end,
+      titles: Array.isArray(record.goalTitles) && record.goalTitles.length === 5
+        ? record.goalTitles.slice() : board.prizes.map(prize => config.benefits[prize].title)
+    };
+    completedDraw.titles[result.end] = benefit.title;
+    $("result-icon").replaceChildren(rewardArt(result.end, true));
     $("result-title").textContent = benefit.title;
     $("result-description").textContent = benefit.description;
     $("result-date").textContent = `抽選日：${new Date(record.drawnAt).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })}`;
@@ -174,7 +192,10 @@
     step(3);
     startButton.textContent = "獲得済みの結果をみる →";
     startButton.disabled = false;
-    if (openDialog && !dialog.open) dialog.showModal();
+    if (openDialog && !dialog.open) {
+      dialog.returnValue = "";
+      dialog.showModal();
+    }
   }
   choices.forEach(button => button.addEventListener("click", () => {
     if (state !== "choosing") return;
@@ -185,7 +206,11 @@
     startButton.disabled = false;
   }));
   startButton.addEventListener("click", async () => {
-    if (state === "complete") { if (!dialog.open) dialog.showModal(); return; }
+    if (state === "complete") {
+      dialog.returnValue = "";
+      if (!dialog.open) dialog.showModal();
+      return;
+    }
     if (state !== "choosing" || selected === null) return;
     state = "saving";
     choices.forEach(b => b.disabled = true);
@@ -194,19 +219,42 @@
     $("instruction").textContent = "線の先には、どんなご褒美が待っているでしょう。";
     try {
       const result = Amida.route(selected, board.bridges);
-      const candidate = { version: 1, board, selected, benefit: { ...config.benefits[board.prizes[result.end]] }, drawnAt: new Date().toISOString() };
+      const candidate = {
+        version: 1, board, selected,
+        benefit: { ...config.benefits[board.prizes[result.end]] },
+        goalTitles: board.prizes.map(prize => config.benefits[prize].title),
+        drawnAt: new Date().toISOString()
+      };
       // Live draws are saved before animation so a reload restores the same result.
       const claim = config.demo ? { record: candidate, fresh: true } : await DrawStore.claim(storageKey, candidate);
       await showRecord(claim.record, claim.fresh);
     } catch (_) { failClosed(); }
   });
-  $("close-result").addEventListener("click", () => dialog.close());
+  $("close-result").addEventListener("click", () => {
+    if (!completedDraw) return;
+    [...$("destinations").children].forEach((cell, column) => {
+      const name = document.createElement("span");
+      name.className = "goal-title";
+      name.textContent = completedDraw.titles[column];
+      cell.replaceChildren(rewardArt(column, true), name);
+      if (column === completedDraw.end) {
+        const badge = document.createElement("strong");
+        badge.className = "goal-badge";
+        badge.textContent = "当選";
+        cell.append(badge);
+      }
+    });
+    dialog.close("show-path");
+    $("result-board").focus();
+  });
   $("retry").addEventListener("click", () => {
     if (!config.demo || state !== "complete") return;
     dialog.close();
     newDraw(true);
   });
-  dialog.addEventListener("close", () => { if (state === "complete") startButton.focus(); });
+  dialog.addEventListener("close", () => {
+    if (state === "complete" && dialog.returnValue !== "show-path") startButton.focus();
+  });
   async function init() {
     try {
       if (config.demo) { newDraw(); return; }

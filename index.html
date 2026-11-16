@@ -33,10 +33,10 @@
       <div class="card-heading"><div><p class="eyebrow">SALON AMIDA</p><h2 id="game-title">癒やしのあみだくじ</h2></div><span class="pill" id="preview-badge">お試し版</span></div>
       <ol class="steps" aria-label="くじの流れ"><li class="current" id="step-1" aria-current="step"><span>1</span>えらぶ</li><li id="step-2"><span>2</span>たどる</li><li id="step-3"><span>3</span>うけとる</li></ol>
       <p class="instruction" id="instruction" role="status" aria-live="polite">お好きなキャラクターを選んでください</p>
-      <div class="board-wrap">
+      <div class="board-wrap" id="result-board" role="region" aria-label="あみだくじの道と特典" tabindex="-1">
         <div class="choices" role="group" aria-label="キャラクターを選ぶ"></div>
         <div class="ladder-stage"><div id="walker" aria-hidden="true" hidden></div><svg id="ladder" viewBox="0 0 500 300" preserveAspectRatio="none" role="img" aria-label="5本の縦線を横線でつないだあみだくじ"><g id="lines"></g><path id="trace" fill="none" stroke="#b08d50" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-        <div class="destinations" id="destinations" aria-label="5つの特典の到着地点"></div>
+        <div class="destinations" id="destinations" role="list" aria-label="5つの特典の到着地点"></div>
       </div>
       <button class="primary-button" id="start" type="button" disabled>キャラクターを選んでください <span aria-hidden="true">→</span></button>
       <p class="small-note" id="demo-note">特典内容は準備中です。お試しでお楽しみください。</p>
@@ -47,7 +47,7 @@
   <section class="howto" aria-labelledby="howto-title"><h2 id="howto-title">あそび方と特典について</h2><ul><li>5体のキャラクターから、好きな1体を選んでくじを引きます。</li><li>線をたどり、5つの特典のうち1つが表示されます。</li><li>結果画面をスクリーンショットで保存し、スタッフにお見せください。</li></ul></section>
   <footer><span id="footer-name">RELAXATION SALON</span><p>こころも、からだも、ふっと軽く。</p></footer>
   <dialog id="result-dialog" aria-labelledby="result-title" aria-describedby="result-description">
-    <div class="result-body"><p class="eyebrow">A GIFT FOR YOU</p><span id="result-icon" class="result-icon" aria-hidden="true">✧</span><p class="result-lead">あなたに届いたのは</p><h2 id="result-title"></h2><p id="result-description"></p><p id="result-date" class="small-note"></p><p class="result-disclaimer" id="result-disclaimer"></p><button class="primary-button" id="close-result" type="button" autofocus>結果の道をみる <span aria-hidden="true">→</span></button><p class="small-note">この画面をスクリーンショットで保存し、スタッフにお見せください。</p><button class="retry-button" id="retry" type="button" hidden>もう一度引く ↻</button></div>
+    <div class="result-body"><p class="eyebrow">A GIFT FOR YOU</p><span id="result-icon" class="result-icon" aria-hidden="true"></span><p class="result-lead">あなたに届いたのは</p><h2 id="result-title"></h2><p id="result-description"></p><p id="result-date" class="small-note"></p><p class="result-disclaimer" id="result-disclaimer"></p><button class="primary-button" id="close-result" type="button" autofocus>結果の道をみる <span aria-hidden="true">→</span></button><p class="small-note">この画面をスクリーンショットで保存し、スタッフにお見せください。</p><button class="retry-button" id="retry" type="button" hidden>もう一度引く ↻</button></div>
   </dialog>
 </body>
 </html>
