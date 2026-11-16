@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5ede1">
+  <title>ご褒美ルーレット</title>
+  <link rel="icon" href="../leaf.svg" type="image/svg+xml">
+  <style>
+    * { box-sizing: border-box; }
+    :root { color-scheme: light; --ink: #3b432f; --green: #41573a; --paper: #fffbf4; --muted: #6c6556; }
+    body { margin: 0; min-height: 100dvh; background: radial-gradient(ellipse at 50% 4%, #fff7eb, #f1e8da 80%); color: var(--ink); font: 15px/1.7 "Yu Gothic", Meiryo, sans-serif; }
+    main { width: min(100% - 28px, 480px); margin: auto; padding: 22px 0; }
+    header { text-align: center; }
+    .brand { display: inline-flex; align-items: center; gap: 7px; color: var(--muted); font-size: 12px; }
+    h1, h2 { font-family: "Yu Mincho", "Hiragino Mincho ProN", Georgia, serif; letter-spacing: .06em; }
+    h1 { margin: 4px 0 0; font-size: clamp(26px, 7.2vw, 36px); }
+    .intro { margin: 3px 0 16px; color: var(--muted); font-size: 12px; }
+    .game { position: relative; background: var(--paper); border: 1px solid #e1d5c2; border-radius: 24px; padding: 26px 16px 17px; text-align: center; box-shadow: 0 12px 35px #6c4a2b13; }
+    .stage { --diameter: min(100%, 285px, 66vw); position: relative; width: var(--diameter); aspect-ratio: 1; margin: 0 auto 19px; }
+    .wheel { position: absolute; inset: 0; border-radius: 50%; border: 5px solid #fffcf5; outline: 2px solid #b39260; box-shadow: 0 4px 12px #66533530; }
+    .wheel::after { content: ""; position: absolute; inset: 7px; border: 1px solid #fff9; border-radius: 50%; pointer-events: none; }
+    .sector { position: absolute; translate: -50% -50%; rotate: var(--label-angle, 0deg); display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid #6e583735; border-radius: 50%; background: #fffaf2d9; color: #453a2b; font: bold 17px Georgia, serif; }
+    .hub { position: absolute; top: 50%; left: 50%; translate: -50% -50%; display: grid; place-items: center; width: 19%; aspect-ratio: 1; border-radius: 50%; background: var(--paper); border: 2px solid #ba9865; box-shadow: 0 3px 8px #60492330; pointer-events: none; }
+    .hub img { width: 78%; }
+    .pointer { position: absolute; z-index: 1; top: -14px; left: 50%; translate: -50% 0; width: 27px; height: 31px; background: #546641; clip-path: polygon(3% 3%, 97% 3%, 50% 100%); }
+    button { display: block; width: min(100%, 320px); min-height: 52px; margin: auto; border: 0; border-radius: 11px; background: var(--green); color: #fff; font: inherit; font-size: 16px; font-weight: 700; letter-spacing: .11em; cursor: pointer; }
+    button:hover:not(:disabled) { background: #32482d; }
+    button:focus-visible { outline: 3px solid #b88a43; outline-offset: 3px; }
+    button:disabled { opacity: .66; cursor: wait; }
+    .status { min-height: 1.7em; margin: 8px 0 0; font-size: 12px; color: var(--muted); }
+    .status--announced { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+    .result { position: relative; margin: 14px 0 0; padding: 13px 15px; border: 1px solid #dac49f; border-radius: 15px; background: #faf0dd; overflow-wrap: anywhere; }
+    .result h2 { margin: 0; font-size: clamp(19px, 5vw, 25px); }
+    .result p { margin: 3px 0 0; font-size: 12px; }
+    .effect-label { display: block; color: #79582f; font-size: 11px; font-weight: bold; }
+    .notes { margin: 13px 6px 0; font-size: 12px; text-align: center; color: var(--muted); }
+    .celebration { pointer-events: none; position: absolute; z-index: 2; inset: 0; overflow: hidden; border-radius: inherit; }
+    .particle { position: absolute; top: var(--top); left: var(--left); width: var(--size); height: var(--size); background: var(--shade); transform: rotate(var(--tilt)); animation: scatter var(--time) var(--delay) ease-out both; }
+    .particle--petals { border-radius: 75% 10% 75% 15%; }
+    .particle--stars { clip-path: polygon(50% 0, 62% 37%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 37%); }
+    .ball { position: absolute; top: 24%; left: 50%; translate: -50% -50%; width: 85px; height: 68px; filter: drop-shadow(0 5px 8px #59361155); }
+    .ball::before, .ball::after { content: ""; position: absolute; width: 50%; height: 100%; background: repeating-linear-gradient(150deg, #ae6143 0 12px, #f0c66c 12px 25px); border: 3px solid #ffefd0; }
+    .ball::before { left: 0; border-radius: 90% 4% 5% 90%; transform-origin: 5% 40%; animation: open-left 1.5s both; }
+    .ball::after { right: 0; border-radius: 4% 90% 90% 5%; transform-origin: 95% 40%; animation: open-right 1.5s both; }
+    .clap { position: absolute; top: 36%; left: 50%; translate: -50% -50%; text-align: center; white-space: nowrap; font-size: 42px; animation: clap .28s ease-in-out 5 alternate both; filter: drop-shadow(0 3px 4px #7657383d); }
+    @keyframes scatter { 0% { opacity: 0; translate: 0 -14px; } 13% { opacity: 1; } 84% { opacity: 1; } 100% { opacity: 0; translate: var(--drift) var(--fall); rotate: 270deg; } }
+    @keyframes open-left { 0%, 24% { transform: rotate(0); } 55%, 85% { transform: rotate(-55deg) translateX(-10px); } 100% { transform: rotate(-58deg) translateX(-10px); opacity: 0; } }
+    @keyframes open-right { 0%, 24% { transform: rotate(0); } 55%, 85% { transform: rotate(55deg) translateX(10px); } 100% { transform: rotate(58deg) translateX(10px); opacity: 0; } }
+    @keyframes clap { from { scale: .8; rotate: -10deg; } to { scale: 1.19; rotate: 7deg; } }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div class="brand"><img src="../leaf.svg" width="25" height="25" alt="">リラクゼーションサロン</div>
+      <h1>ご褒美ルーレット</h1>
+      <p class="intro">5つの特典から、ひとつが当たります。</p>
+    </header>
+    <section class="game" aria-label="ルーレット抽選">
+      <div class="stage" aria-hidden="true"><div class="wheel" id="wheel"></div><div class="hub"><img src="../leaf.svg" alt=""></div><div class="pointer"></div></div>
+      <button id="draw" type="button">押して抽選</button>
+      <p class="status" id="status" role="status">テスト期間中は何度でも抽選できます。</p>
+      <div id="result" class="result" hidden>
+        <span class="effect-label" id="effect-label"></span>
+        <h2 id="prize-title"></h2>
+        <p id="prize-description"></p>
+      </div>
+      <div id="celebration" class="celebration" aria-hidden="true"></div>
+      <noscript><p>抽選するには、ブラウザでJavaScriptを有効にしてください。</p></noscript>
+    </section>
+    <p class="notes">結果はスクリーンショットで保存できます。</p>
+  </main>
+  <script>
+    "use strict";
+    // 特典名と内容が決まったら、次の5件の title と description を差し替えます。
+    const prizes = [
+      { mark: "A", title: "ルーレット特典A", description: "特典内容は準備中です。", color: "#dfb77c", effect: "confetti", label: "花吹雪でお祝い" },
+      { mark: "B", title: "ルーレット特典B", description: "特典内容は準備中です。", color: "#b9c9a0", effect: "kusudama", label: "くす玉が開きました" },
+      { mark: "C", title: "ルーレット特典C", description: "特典内容は準備中です。", color: "#e1b9ac", effect: "clap", label: "拍手でお祝い" },
+      { mark: "D", title: "ルーレット特典D", description: "特典内容は準備中です。", color: "#decba5", effect: "petals", label: "花びらが舞います" },
+      { mark: "E", title: "ルーレット特典E", description: "特典内容は準備中です。", color: "#bdd0c7", effect: "stars", label: "星がきらめきます" }
+    ];
+    const $ = id => document.getElementById(id);
+    const wheel = $("wheel");
+    const draw = $("draw");
+    const status = $("status");
+    const celebration = $("celebration");
+    const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
+    const sectorAngle = 360 / prizes.length;
+    let rotation = 0;
+    let cleanup;
+
+    wheel.style.background = `conic-gradient(from ${-sectorAngle / 2}deg, ${prizes.map((prize, i) => `${prize.color} ${i * sectorAngle}deg ${(i + 1) * sectorAngle}deg`).join(", ")})`;
+    prizes.forEach((prize, i) => {
+      const angle = i * 2 * Math.PI / prizes.length;
+      const sector = document.createElement("span");
+      sector.className = "sector";
+      sector.textContent = prize.mark;
+      sector.style.left = `${50 + 32 * Math.sin(angle)}%`;
+      sector.style.top = `${50 - 32 * Math.cos(angle)}%`;
+      wheel.append(sector);
+    });
+
+    function choosePrize() {
+      const sample = new Uint32Array(1);
+      const limit = Math.floor(2 ** 32 / prizes.length) * prizes.length;
+      do { crypto.getRandomValues(sample); } while (sample[0] >= limit);
+      return sample[0] % prizes.length;
+    }
+
+    function celebrate(effect) {
+      if (reduceMotion.matches) return;
+      if (effect === "clap") {
+        const hands = document.createElement("span");
+        hands.className = "clap";
+        hands.textContent = "👏 👏 👏";
+        celebration.append(hands);
+        cleanup = setTimeout(() => celebration.replaceChildren(), 1450);
+        return;
+      }
+      if (effect === "kusudama") {
+        const ball = document.createElement("span");
+        ball.className = "ball";
+        celebration.append(ball);
+      }
+      const palette = effect === "stars" ? ["#d6a033", "#eed179", "#ac874d"]
+        : effect === "petals" ? ["#dc9eac", "#edc3bf", "#b98297"]
+        : ["#d59e57", "#8aa967", "#c78284", "#75a595"];
+      const count = { confetti: 44, kusudama: 32, petals: 25, stars: 28 }[effect];
+      for (let i = 0; i < count; i++) {
+        const piece = document.createElement("span");
+        piece.className = `particle particle--${effect}`;
+        piece.style.setProperty("--top", effect === "kusudama" ? "24%" : `${Math.random() * 22}%`);
+        piece.style.setProperty("--left", effect === "kusudama" ? "50%" : `${Math.random() * 100}%`);
+        piece.style.setProperty("--drift", `${(Math.random() - .5) * 290}px`);
+        piece.style.setProperty("--fall", `${150 + Math.random() * 300}px`);
+        piece.style.setProperty("--tilt", `${Math.random() * 180}deg`);
+        piece.style.setProperty("--size", `${4 + Math.random() * (effect === "stars" ? 17 : 10)}px`);
+        piece.style.setProperty("--delay", `${(effect === "kusudama" ? 380 : 0) + Math.random() * 500}ms`);
+        piece.style.setProperty("--time", `${780 + Math.random() * 620}ms`);
+        piece.style.setProperty("--shade", palette[i % palette.length]);
+        celebration.append(piece);
+      }
+      cleanup = setTimeout(() => celebration.replaceChildren(), 2350);
+    }
+
+    draw.addEventListener("click", async () => {
+      draw.disabled = true;
+      clearTimeout(cleanup);
+      celebration.replaceChildren();
+      $("result").hidden = true;
+      status.classList.remove("status--announced");
+      status.textContent = "抽選中です…";
+      try {
+        const index = choosePrize();
+        const prize = prizes[index];
+        const target = (360 - index * sectorAngle) % 360;
+        const end = rotation + 360 * 4 + (target - rotation % 360 + 360) % 360;
+        if (!reduceMotion.matches && typeof wheel.animate === "function") {
+          const spin = wheel.animate([{ transform: `rotate(${rotation}deg)` }, { transform: `rotate(${end}deg)` }], { duration: 2500, easing: "cubic-bezier(.13,.62,.15,1)", fill: "forwards" });
+          try { await spin.finished; } catch (_) { /* Show the selected result if the animation stops. */ }
+          wheel.style.transform = `rotate(${target}deg)`;
+          spin.cancel();
+        } else {
+          wheel.style.transform = `rotate(${target}deg)`;
+        }
+        rotation = target;
+        wheel.style.setProperty("--label-angle", `${-target}deg`);
+        $("effect-label").textContent = prize.label;
+        $("prize-title").textContent = prize.title;
+        $("prize-description").textContent = prize.description;
+        $("result").hidden = false;
+        status.classList.add("status--announced");
+        status.textContent = `${prize.title}が当たりました。`;
+        celebrate(prize.effect);
+      } catch (_) {
+        status.classList.remove("status--announced");
+        status.textContent = "抽選できませんでした。もう一度お試しください。";
+      } finally {
+        draw.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
