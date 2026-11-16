@@ -43,116 +43,150 @@
     .sector.is-winner { color: #fff; background: var(--green); box-shadow: 0 0 0 4px #fffcf5, 0 0 18px #66513260; }
     .result { z-index: 3; }
     .result.show-win { animation: result-in .38s cubic-bezier(.18,.86,.26,1.23) both; }
-    .celebration { pointer-events: none; position: absolute; z-index: 2; inset: 0; overflow: hidden; border-radius: inherit; }
+
+    .wheel-frame {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) min(59vw, 270px) minmax(0, 1fr);
+      align-items: stretch;
+      margin-bottom: 19px;
+    }
+    .wheel-frame .stage { width: 100%; margin: 0; }
+    .rail {
+      position: relative;
+      overflow: hidden;
+      min-width: 0;
+      margin: -12px 0 0;
+      pointer-events: none;
+    }
+    .rail--left { margin-right: 8px; }
+    .rail--right { margin-left: 8px; }
     .particle {
       position: absolute;
       top: var(--top);
       left: var(--left);
       width: var(--size);
-      height: calc(var(--size) * .72);
+      height: calc(var(--size) * .65);
       background: var(--shade);
-      animation: fall var(--time) var(--delay) ease-out both;
+      animation: side-fall var(--time) var(--delay) ease-out both;
     }
-    .particle--ribbon { height: calc(var(--size) * 2.25); border-radius: 2px; }
-    .particle--burst { animation-name: burst; }
-    .ball {
+    .particle--burst { animation-name: side-burst; }
+    .curl {
       position: absolute;
-      top: 34%;
-      left: 50%;
-      translate: -50% -50%;
-      width: 115px;
-      height: 103px;
-      filter: drop-shadow(0 6px 11px #59361155);
-      animation: ball-drop .6s cubic-bezier(.2,.8,.3,1.23) both;
+      z-index: 1;
+      top: var(--top);
+      left: var(--left);
+      width: 10px;
+      height: 55px;
+      color: var(--shade);
+      background: radial-gradient(ellipse at left center, transparent 42%, currentColor 46% 58%, transparent 63%) 0 0 / 10px 17px repeat-y;
+      transform-origin: top;
+      animation: curl-unwind 1.8s var(--delay) ease-out both;
     }
+    .kusudama {
+      position: absolute;
+      top: 3%;
+      left: 50%;
+      translate: -50% 0;
+      width: min(38px, 91%);
+      height: 100%;
+      animation: settle-in .48s ease-out both;
+    }
+    .suspension { position: absolute; top: 0; left: 50%; width: 1px; height: 17%; background: #866748; }
+    .ball { position: absolute; top: 16%; width: 100%; aspect-ratio: 1.02; }
     .ball::before, .ball::after {
       content: "";
       position: absolute;
       top: 0;
       width: 50%;
       height: 100%;
-      border: 3px solid #fff0ba;
-      background: radial-gradient(ellipse at top, #fff2a7, #d6983c 64%, #a7692b);
+      border: 1px solid #975925;
+      background: radial-gradient(ellipse at top, #fff0a8, #d99a40 64%, #9f6225);
     }
-    .ball::before { left: 0; border-radius: 98% 4% 5% 98%; transform-origin: left 28%; animation: open-left 2.8s both; }
-    .ball::after { right: 0; border-radius: 4% 98% 98% 5%; transform-origin: right 28%; animation: open-right 2.8s both; }
+    .ball::before { left: 0; border-radius: 100% 0 0 100%; transform-origin: right 5%; animation: split-left 3.25s both; }
+    .ball::after { right: 0; border-radius: 0 100% 100% 0; transform-origin: left 5%; animation: split-right 3.25s both; }
     .win-banner {
       position: absolute;
-      z-index: 1;
-      top: 45%;
+      top: 23%;
       left: 50%;
-      padding: 4px 14px 18px;
+      z-index: 2;
       translate: -50% 0;
-      color: #703915;
-      background: #fff4cf;
-      line-height: 1.25;
-      font-family: inherit;
+      padding: 7px 3px 12px;
+      color: #7a3a23;
+      background: #fff1be;
+      box-shadow: inset 0 0 0 1px #c9934a;
+      font-size: clamp(10px, 3.4vw, 15px);
+      line-height: 1.15;
       font-weight: 800;
-      font-size: 23px;
+      writing-mode: vertical-rl;
       white-space: nowrap;
-      clip-path: polygon(0 0,100% 0,100% 100%,50% 83%,0 100%);
-      animation: unfurl 2.6s .72s both;
+      clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 91%, 0 100%);
+      transform-origin: top;
+      animation: unfurl 2.45s .70s both;
     }
     .party-popper {
       position: absolute;
-      top: 50%;
-      left: 12%;
-      width: 47px;
-      height: 62px;
-      transform: rotate(36deg);
-      transform-origin: 50% 70%;
-      background: repeating-linear-gradient(8deg, #a9674c 0 11px, #f5c165 11px 20px, #ffebac 20px 23px);
-      clip-path: polygon(3% 2%, 97% 2%, 55% 100%, 45% 100%);
-      animation: popper-in 1.8s both;
+      top: 52%;
+      left: 50%;
+      translate: -50% 0;
+      width: min(38px, 86%);
+      height: 51px;
+      animation: settle-in .34s ease-out both;
     }
-    .party-popper--right { left: auto; right: 12%; rotate: -72deg; }
+    .cone {
+      display: block;
+      position: absolute;
+      inset: 4px 0 5px;
+      background: repeating-linear-gradient(11deg, #b06249 0 9px, #edb455 9px 18px, #ffdfa0 18px 20px);
+      clip-path: polygon(0 0, 100% 0, 53% 100%, 47% 100%);
+      transform-origin: bottom;
+      animation: popper-kick .35s .68s both;
+    }
+    .cone-mouth { position: absolute; top: 0; left: 0; width: 100%; height: 9px; border-radius: 50%; border: 1.5px solid #b67a41; background: #815638; }
+    .pull-string { position: absolute; top: 88%; left: 50%; width: 9px; height: 17px; border-left: 1px solid #72533c; border-bottom: 2px solid #a9693a; border-radius: 25% 15% 60% 70%; transform-origin: top left; animation: pull .48s .31s both; }
     .balloon {
       position: absolute;
       left: var(--left);
-      top: 73%;
+      top: 78%;
       width: var(--size);
-      height: calc(var(--size) * 1.21);
+      height: calc(var(--size) * 1.23);
       border-radius: 52% 50% 51% 48% / 50% 48% 57% 55%;
       background: radial-gradient(circle at 29% 23%, #fff9 0 9%, transparent 12%), var(--shade);
-      box-shadow: inset -5px -8px #65482e2e;
+      box-shadow: inset -4px -5px #65482e2e;
       animation: balloon-rise 2.55s var(--delay) ease-in-out both;
     }
-    .balloon::before { content: ""; position: absolute; bottom: -4px; left: calc(50% - 4px); border: 4px solid transparent; border-bottom: 0; border-top-color: var(--shade); }
-    .balloon::after { content: ""; position: absolute; top: 100%; left: 50%; height: 34px; width: 7px; border-left: 1px solid #897557; border-radius: 60%; }
+    .balloon::before { content: ""; position: absolute; bottom: -4px; left: calc(50% - 3px); border: 3px solid transparent; border-bottom: 0; border-top-color: var(--shade); }
+    .balloon::after { content: ""; position: absolute; top: 100%; left: 50%; height: 23px; width: 6px; border-left: 1px solid #897557; border-radius: 60%; }
     .clap {
       position: absolute;
       top: var(--top);
-      left: var(--left);
+      left: 50%;
       translate: -50% -50%;
-      font-size: clamp(37px, 13vw, 68px);
-      filter: drop-shadow(0 4px 4px #76573844);
-      animation: clap .32s var(--delay) ease-in-out 7 alternate both;
+      font-size: clamp(20px, 7vw, 42px);
+      animation: clap .32s var(--delay) ease-in-out 8 alternate both;
     }
     @keyframes pointer-tick { to { rotate: -15deg; } }
     @keyframes result-in { from { opacity: 0; transform: translateY(8px) scale(.93); } }
-    @keyframes fall {
-      0% { opacity: 0; translate: 0 -20px; }
-      13%, 75% { opacity: 1; }
-      100% { opacity: 0; translate: var(--dx) var(--dy); rotate: 390deg; }
-    }
-    @keyframes burst {
-      0% { opacity: 0; scale: .15; }
-      15%, 47% { opacity: 1; }
-      58% { translate: var(--dx) var(--dy); }
-      100% { opacity: 0; translate: var(--dx) calc(var(--dy) + 120px); rotate: 280deg; }
-    }
-    @keyframes ball-drop { from { translate: -50% -410%; } }
-    @keyframes open-left { 0%, 24% { rotate: 0deg; } 43%, 91% { rotate: -57deg; } 100% { rotate: -60deg; opacity: 0; } }
-    @keyframes open-right { 0%, 24% { rotate: 0deg; } 43%, 91% { rotate: 57deg; } 100% { rotate: 60deg; opacity: 0; } }
-    @keyframes unfurl { 0% { opacity: 0; scale: 1 0; transform-origin: center top; } 19%, 84% { opacity: 1; scale: 1; } 100% { opacity: 0; } }
-    @keyframes popper-in { 0% { opacity: 0; scale: .5; } 21%, 65% { opacity: 1; scale: 1; } 29% { scale: 1.18; } 100% { opacity: 0; scale: .8; } }
-    @keyframes balloon-rise { 0% { opacity: 0; translate: 0 95px; rotate: -9deg; } 14%, 80% { opacity: 1; } 52% { translate: var(--drift) -165px; rotate: 9deg; } 100% { opacity: 0; translate: 0 -370px; rotate: -8deg; } }
-    @keyframes clap { from { scale: .88; rotate: -14deg; } to { scale: 1.19; rotate: 8deg; } }
+    @keyframes settle-in { from { opacity: 0; translate: -50% -22px; } }
+    @keyframes side-fall { 0% { opacity: 0; } 12%, 76% { opacity: 1; } 100% { opacity: 0; translate: var(--dx) 245px; rotate: 420deg; } }
+    @keyframes side-burst { 0% { opacity: 0; scale: .2; } 20%, 64% { opacity: 1; } 46% { translate: var(--dx) var(--peak); rotate: 140deg; } 100% { opacity: 0; translate: var(--dx) 104px; rotate: 440deg; } }
+    @keyframes curl-unwind { 0% { opacity: 0; scale: .5 .1; } 24%, 73% { opacity: 1; scale: 1 1; } 100% { opacity: 0; translate: var(--dx) 75px; rotate: 24deg; } }
+    @keyframes split-left { 0%, 18% { rotate: 0deg; } 29%, 92% { rotate: 67deg; } 100% { rotate: 67deg; opacity: 0; } }
+    @keyframes split-right { 0%, 18% { rotate: 0deg; } 29%, 92% { rotate: -67deg; } 100% { rotate: -67deg; opacity: 0; } }
+    @keyframes unfurl { 0% { opacity: 0; scale: 1 0; } 22%, 88% { opacity: 1; scale: 1; } 100% { opacity: 0; } }
+    @keyframes pull { 0% { scale: 1 .7; } 55%, 100% { scale: 1 1.65; } }
+    @keyframes popper-kick { 35% { translate: 0 4px; rotate: -8deg; } }
+    @keyframes balloon-rise { 0% { opacity: 0; translate: 0 45px; } 14%, 77% { opacity: 1; } 46% { translate: var(--dx) -98px; rotate: 9deg; } 100% { opacity: 0; translate: 0 -240px; rotate: -8deg; } }
+    @keyframes clap { from { scale: .84; rotate: -14deg; } to { scale: 1.14; rotate: 8deg; } }
     .is-still *, .is-still *::before, .is-still *::after { animation: none !important; }
-    .is-still .ball::before { rotate: -54deg; }
-    .is-still .ball::after { rotate: 54deg; }
-    .is-still .particle { top: var(--still-top); left: var(--still-left); rotate: var(--still-tilt); }
-    .is-still .balloon { top: var(--still-top); }
+    .is-still .ball::before { rotate: 67deg; }
+    .is-still .ball::after { rotate: -67deg; }
+    .is-still .particle, .is-still .balloon { top: var(--still-top); }
+    .is-still .particle { left: var(--still-left); rotate: var(--still-tilt); }
+    .is-still .pull-string { scale: 1 1.65; }
+    @media (max-width: 360px) {
+      .game { padding-inline: 12px; }
+      .wheel-frame { grid-template-columns: minmax(0, 1fr) 55vw minmax(0, 1fr); }
+    }
     [hidden] { display: none !important; }
   </style>
 </head>
@@ -164,7 +198,11 @@
       <p class="intro">5つの特典から、ひとつが当たります。</p>
     </header>
     <section class="game" aria-label="ルーレット抽選">
-      <div class="stage" aria-hidden="true"><div class="wheel" id="wheel"></div><div class="hub"><img src="../leaf.svg" alt=""></div><div class="pointer"></div></div>
+      <div class="wheel-frame" aria-hidden="true">
+        <div class="rail rail--left"></div>
+        <div class="stage"><div class="wheel" id="wheel"></div><div class="hub"><img src="../leaf.svg" alt=""></div><div class="pointer"></div></div>
+        <div class="rail rail--right"></div>
+      </div>
       <button id="draw" type="button">抽選開始</button>
       <p class="status" id="status" role="status">テスト期間中は何度でも抽選できます。</p>
       <div id="result" class="result" hidden>
@@ -172,7 +210,6 @@
         <h2 id="prize-title"></h2>
         <p id="prize-description"></p>
       </div>
-      <div id="celebration" class="celebration" aria-hidden="true"></div>
       <noscript><p>抽選するには、ブラウザでJavaScriptを有効にしてください。</p></noscript>
     </section>
     <p class="notes">結果はスクリーンショットで保存できます。</p>
@@ -193,7 +230,7 @@
     const result = $("result");
     const draw = $("draw");
     const status = $("status");
-    const celebration = $("celebration");
+    const rails = [...document.querySelectorAll(".rail")];
     const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
     const sectorAngle = 360 / prizes.length;
     let rotation = 0;
@@ -221,70 +258,88 @@
       element.style.setProperty("--" + name, value);
     }
 
-    function art(className, content = "") {
+    function art(parent, className, content = "") {
       const item = document.createElement("span");
       item.className = className;
       item.textContent = content;
-      celebration.append(item);
+      parent.append(item);
       return item;
     }
 
-    function scatter(count, origin) {
+    const palette = ["#e1a841", "#7aab63", "#db8091", "#58a8a6", "#a28ac2"];
+
+    function scatter(rail, count, origin = null) {
       for (let i = 0; i < count; i++) {
-        const burst = Boolean(origin);
-        const piece = art("particle" + (burst ? " particle--burst" : "") + (i % 4 === 0 ? " particle--ribbon" : ""));
-        const launch = burst ? origin(i) : { left: Math.random() * 100, top: 0, delay: Math.random() * 800, direction: 0 };
-        prop(piece, "left", launch.left + "%");
-        prop(piece, "top", launch.top + "%");
-        prop(piece, "dx", (launch.direction + (Math.random() - .5) * (burst ? 320 : 135)) + "px");
-        prop(piece, "dy", (burst ? -95 + Math.random() * 210 : 315 + Math.random() * 190) + "px");
-        prop(piece, "size", (5 + Math.random() * 9) + "px");
-        prop(piece, "shade", ["#e1a841", "#7aab63", "#db8091", "#58a8a6", "#a28ac2"][i % 5]);
-        prop(piece, "delay", launch.delay + "ms");
-        prop(piece, "time", (1100 + Math.random() * 850) + "ms");
-        prop(piece, "still-top", (4 + Math.random() * 62) + "%");
-        prop(piece, "still-left", (3 + Math.random() * 94) + "%");
-        prop(piece, "still-tilt", (Math.random() * 180) + "deg");
+        const piece = art(rail, origin ? "particle particle--burst" : "particle");
+        prop(piece, "left", (origin ? 46 : Math.random() * 84) + "%");
+        prop(piece, "top", (origin ? origin.top : Math.random() * 12) + "%");
+        prop(piece, "dx", (Math.random() - .5) * 38 + "px");
+        prop(piece, "peak", (origin ? origin.peak - Math.random() * 48 : 0) + "px");
+        prop(piece, "size", (3 + Math.random() * 5) + "px");
+        prop(piece, "shade", palette[i % palette.length]);
+        prop(piece, "delay", ((origin?.delay ?? 0) + Math.random() * (origin ? 180 : 820)) + "ms");
+        prop(piece, "time", (1080 + Math.random() * 800) + "ms");
+        prop(piece, "still-top", (6 + Math.random() * 80) + "%");
+        prop(piece, "still-left", (4 + Math.random() * 78) + "%");
+        prop(piece, "still-tilt", Math.random() * 180 + "deg");
       }
     }
 
     function celebrate(effect) {
-      celebration.classList.toggle("is-still", reduceMotion.matches);
-      if (effect === "kusudama") {
-        art("ball");
-        art("win-banner", "おめでとう");
-        scatter(48, () => ({ left: 50, top: 34, delay: 740 + Math.random() * 240, direction: 0 }));
-      } else if (effect === "confetti") {
-        scatter(72);
-      } else if (effect === "popper") {
-        art("party-popper");
-        art("party-popper party-popper--right");
-        scatter(50, i => ({ left: i % 2 ? 22 : 78, top: 53, delay: 330 + Math.random() * 160, direction: i % 2 ? 90 : -90 }));
-      } else if (effect === "balloons") {
-        for (let i = 0; i < 10; i++) {
-          const balloon = art("balloon");
-          prop(balloon, "left", (4 + i * 9 + Math.random() * 3) + "%");
-          prop(balloon, "size", (28 + Math.random() * 25) + "px");
-          prop(balloon, "shade", ["#e9a1a5", "#f1c26d", "#a1c581", "#8abcc2", "#bea0cb"][i % 5]);
-          prop(balloon, "drift", (i % 2 ? -20 : 18) + "px");
-          prop(balloon, "delay", (i * 75) + "ms");
-          prop(balloon, "still-top", (14 + i % 3 * 15 + Math.random() * 7) + "%");
+      const still = reduceMotion.matches;
+      for (const rail of rails) {
+        rail.classList.toggle("is-still", still);
+        if (effect === "kusudama") {
+          const hanging = art(rail, "kusudama");
+          art(hanging, "suspension");
+          art(hanging, "ball");
+          art(rail, "win-banner", "おめでとう！");
+          scatter(rail, 21, { top: 24, peak: -4, delay: 700 });
+          [4, 67].forEach((left, i) => {
+            const tape = art(rail, "curl");
+            prop(tape, "top", "27%");
+            prop(tape, "left", left + "%");
+            prop(tape, "shade", palette[i + 2]);
+            prop(tape, "delay", (745 + i * 95) + "ms");
+            prop(tape, "dx", (i ? 5 : -5) + "px");
+          });
+        } else if (effect === "confetti") {
+          scatter(rail, 31);
+        } else if (effect === "popper") {
+          const popper = art(rail, "party-popper");
+          art(popper, "cone");
+          art(popper, "cone-mouth");
+          art(popper, "pull-string");
+          scatter(rail, 28, { top: 53, peak: -80, delay: 665 });
+        } else if (effect === "balloons") {
+          for (let i = 0; i < 5; i++) {
+            const balloon = art(rail, "balloon");
+            prop(balloon, "left", (i % 2 ? 33 : 5) + "%");
+            prop(balloon, "size", (16 + Math.random() * 11) + "px");
+            prop(balloon, "shade", palette[i]);
+            prop(balloon, "dx", (i % 2 ? -7 : 7) + "px");
+            prop(balloon, "delay", (i * 130) + "ms");
+            prop(balloon, "still-top", (7 + i * 15) + "%");
+          }
+        } else if (effect === "clap") {
+          [27, 62].forEach((top, i) => {
+            const hands = art(rail, "clap", "👏");
+            prop(hands, "top", top + "%");
+            prop(hands, "delay", (i * 150) + "ms");
+          });
         }
-      } else if (effect === "clap") {
-        [[21, 59], [50, 38], [78, 60]].forEach(([left, top], i) => {
-          const hands = art("clap", "👏");
-          prop(hands, "left", left + "%");
-          prop(hands, "top", top + "%");
-          prop(hands, "delay", (i * 115) + "ms");
-        });
       }
-      if (!reduceMotion.matches) cleanup = setTimeout(() => celebration.replaceChildren(), 3450);
+      if (!still) cleanup = setTimeout(clearCelebration, 3450);
+    }
+
+    function clearCelebration() {
+      rails.forEach(rail => rail.replaceChildren());
     }
 
     draw.addEventListener("click", async () => {
       draw.disabled = true;
       clearTimeout(cleanup);
-      celebration.replaceChildren();
+      clearCelebration();
       result.hidden = true;
       result.classList.remove("show-win");
       wheel.querySelector(".is-winner")?.classList.remove("is-winner");
