@@ -185,6 +185,11 @@
     $("result-icon").replaceChildren(rewardArt(result.end, true));
     $("result-title").textContent = benefit.title;
     $("result-description").textContent = benefit.description;
+    const retry = $("retry");
+    if (record.managementId && $("draw-log").dataset.recordId !== record.managementId) {
+      retry.disabled = true;
+      DrawLog.show($("draw-log"), "amida", record.managementId, benefit.title, () => { retry.disabled = false; });
+    }
     $("result-date").textContent = `抽選日：${new Date(record.drawnAt).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })}`;
     $("result-disclaimer").textContent = config.demo ? "現在はお試し版です。実際の特典内容は後日ご案内します。" : "この画面をスタッフにお見せください。";
     $("instruction").textContent = characters[selected][0] + "が「" + benefit.title + "」に到着しました。";
@@ -221,6 +226,7 @@
       const result = Amida.route(selected, board.bridges);
       const candidate = {
         version: 1, board, selected,
+        managementId: DrawLog.id("amida"),
         benefit: { ...config.benefits[board.prizes[result.end]] },
         goalTitles: board.prizes.map(prize => config.benefits[prize].title),
         drawnAt: new Date().toISOString()
