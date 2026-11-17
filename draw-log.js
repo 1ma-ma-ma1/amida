@@ -8,7 +8,7 @@ globalThis.DrawPrizes = [
 
 (() => {
   'use strict';
-  const prefixes = { amida: 'AM-', roulette: 'RL-', egg: 'EG-' };
+  const prefixes = { amida: 'AM-', roulette: 'RL-', egg: 'EG-', kuji: 'KJ-' };
   const recorded = window.DrawRecording === true;
   const pending = new Map();
 

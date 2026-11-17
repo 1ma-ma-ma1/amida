@@ -61,6 +61,7 @@
 </head>
 <body>
   <main>
+    <a href="../#draw-menu" class="integrated-back" style="display:inline-block;min-height:36px;padding:6px 0;margin-bottom:5px;color:inherit;text-underline-offset:3px;font-size:12px">← 抽選一覧へ戻る</a>
     <header><div class="brand"><img src="../leaf.svg" width="25" height="25" alt="">リラクゼーションサロン</div><h1>たまごのご褒美くじ</h1><p class="intro">5つのたまごから、好きなひとつを選んでください。</p></header>
     <section class="game" aria-label="たまごの抽選">
       <p id="instruction" class="instruction" role="status">どのたまごを選びますか？</p>
@@ -94,7 +95,7 @@
         const random = new Uint8Array(1);
         const limit = Math.floor(256 / prizes.length) * prizes.length;
         do { crypto.getRandomValues(random); } while (random[0] >= limit);
-        return prizes[random[0] % prizes.length];
+        return random[0] % prizes.length;
       }
 
       async function draw(button) {
