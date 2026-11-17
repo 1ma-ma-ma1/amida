@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#f1e9f2">
   <title>たまごのご褒美くじ</title>
   <link rel="icon" href="../leaf.svg" type="image/svg+xml">
-  <script src="../draw-log.js" defer></script>
+  <script src="../draw-log.js?v=2" defer></script>
   <style>
     * { box-sizing: border-box; }
     body { margin: 0; min-height: 100vh; color: #443750; background: radial-gradient(ellipse at 15% 5%,#f8e2e5,transparent 55%), radial-gradient(ellipse at 95% 35%,#dceee6,transparent 56%), #f2ebf7; font: 15px/1.7 "Yu Gothic", Meiryo, sans-serif; }
@@ -53,6 +53,8 @@
     .retry, #draw-log button { min-height: 44px; padding: 7px 18px; margin-top: 13px; border: 0; border-radius: 9px; background: #695477; color: white; font: inherit; cursor: pointer; }
     .retry:disabled { opacity: .55; cursor: wait; }
     .note { margin: 11px 0 0; color: #695b72; font-size: 12px; }
+    .award-detail { display: block; font-size: .5em; margin-top: .2em; letter-spacing: 0; }
+    .award-rank { display: block; font-size: 13px; font-weight: 700; }
     [hidden] { display: none !important; }
     @media (prefers-reduced-motion: reduce) { .cracking * { animation: none !important; } }
   </style>
@@ -64,7 +66,7 @@
       <p id="instruction" class="instruction" role="status">どのたまごを選びますか？</p>
       <div class="eggs" id="eggs"></div>
       <div class="result" id="result" hidden>
-        <h2 id="prize"></h2><p id="description"></p><div id="draw-log" hidden></div>
+        <span id="prize-rank" class="award-rank" hidden></span><h2><span id="prize"></span><span id="description" class="award-detail" hidden></span></h2><div id="draw-log" hidden></div>
       </div>
       <button id="retry" class="retry" type="button" hidden>もう一度引く</button>
       <p class="note">テスト版は何度でも遊べます。結果はスクリーンショットで保存できます。</p>
@@ -74,14 +76,7 @@
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       'use strict';
-      // 特典が決まったら title と description を更新します。
-      const prizes = [
-        { title: 'たまご特典A', description: '特典内容は準備中です。' },
-        { title: 'たまご特典B', description: '特典内容は準備中です。' },
-        { title: 'たまご特典C', description: '特典内容は準備中です。' },
-        { title: 'たまご特典D', description: '特典内容は準備中です。' },
-        { title: 'たまご特典E', description: '特典内容は準備中です。' }
-      ];
+      const prizes = DrawPrizes;
       const $ = id => document.getElementById(id);
       const retry = $('retry');
       const eggs = prizes.map((_, index) => {
@@ -105,7 +100,14 @@
       async function draw(button) {
         if (button.disabled) return;
         eggs.forEach(egg => { egg.disabled = true; });
-        const prize = choosePrize();
+        let selection;
+        try { selection = await DrawLog.choose("egg", choosePrize()); }
+        catch (_) {
+          eggs.forEach(egg => { egg.disabled = false; });
+          $("instruction").textContent = "抽選を確認できませんでした。もう一度お試しください。";
+          return;
+        }
+        const prize = prizes[selection.index];
         button.classList.add('chosen', 'cracking');
         $('instruction').textContent = 'たまごの中には…';
         if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -113,16 +115,11 @@
         }
         button.classList.remove('cracking');
         button.classList.add('opened');
-        $('prize').textContent = prize.title;
-        $('description').textContent = prize.description;
+        DrawLog.render($("prize-rank"), $("prize"), $("description"), prize);
         $('result').hidden = false;
         $('instruction').textContent = prize.title + 'が当たりました！';
         retry.hidden = false;
-        const managementId = window.DrawLog?.id('egg');
-        retry.disabled = Boolean(managementId);
-        if (managementId) {
-          DrawLog.show($('draw-log'), 'egg', managementId, prize.title, () => { retry.disabled = false; });
-        }
+        DrawLog.finish($("draw-log"), "egg", selection.id);
       }
 
       retry.addEventListener('click', () => {

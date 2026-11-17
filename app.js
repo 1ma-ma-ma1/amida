@@ -58,7 +58,7 @@
   $("footer-name").textContent = config.salonName;
   document.title = `癒やしのあみだくじ | ${config.salonName}`;
   $("preview-badge").hidden = !config.demo;
-  $("demo-note").textContent = config.demo ? "特典内容は準備中です。お試しでお楽しみください。" : "結果が出たら、スタッフに画面をお見せください。";
+  $("demo-note").textContent = config.demo ? "お試しでお楽しみください。" : "結果が出たら、スタッフに画面をお見せください。";
 
   function step(number) {
     for (let i = 1; i <= 3; i++) {
@@ -151,6 +151,10 @@
     delete walker.dataset.motion;
   }
 
+  function prizeLabel(prize) {
+    return prize.rank ? prize.rank + "等 " + prize.title : prize.title;
+  }
+
   function failClosed() {
     state = "error";
     choices.forEach(b => b.disabled = true);
@@ -179,19 +183,14 @@
     completedDraw = {
       end: result.end,
       titles: Array.isArray(record.goalTitles) && record.goalTitles.length === 5
-        ? record.goalTitles.slice() : board.prizes.map(prize => config.benefits[prize].title)
+        ? record.goalTitles.slice() : board.prizes.map(prize => prizeLabel(config.benefits[prize]))
     };
-    completedDraw.titles[result.end] = benefit.title;
+    completedDraw.titles[result.end] = prizeLabel(benefit);
     $("result-icon").replaceChildren(rewardArt(result.end, true));
-    $("result-title").textContent = benefit.title;
-    $("result-description").textContent = benefit.description;
-    const retry = $("retry");
-    if (record.managementId && $("draw-log").dataset.recordId !== record.managementId) {
-      retry.disabled = true;
-      DrawLog.show($("draw-log"), "amida", record.managementId, benefit.title, () => { retry.disabled = false; });
-    }
+    DrawLog.render($("result-rank"), $("result-title"), $("result-discount"), benefit);
+    DrawLog.finish($("draw-log"), "amida", record.managementId);
     $("result-date").textContent = `抽選日：${new Date(record.drawnAt).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })}`;
-    $("result-disclaimer").textContent = config.demo ? "現在はお試し版です。実際の特典内容は後日ご案内します。" : "この画面をスタッフにお見せください。";
+    $("result-disclaimer").textContent = config.demo ? "現在はお試し版です。" : "この画面をスタッフにお見せください。";
     $("instruction").textContent = characters[selected][0] + "が「" + benefit.title + "」に到着しました。";
     state = "complete";
     step(3);
@@ -224,12 +223,25 @@
     $("instruction").textContent = "線の先には、どんなご褒美が待っているでしょう。";
     try {
       const result = Amida.route(selected, board.bridges);
+      let selection;
+      try {
+        selection = await DrawLog.choose("amida", board.prizes[result.end]);
+      } catch (_) {
+        state = "choosing";
+        choices.forEach(button => button.disabled = false);
+        startButton.disabled = false;
+        startButton.textContent = "もう一度試す →";
+        $("instruction").textContent = "抽選を確認できませんでした。もう一度お試しください。";
+        return;
+      }
+      const originalColumn = board.prizes.indexOf(selection.index);
+      [board.prizes[result.end], board.prizes[originalColumn]] = [board.prizes[originalColumn], board.prizes[result.end]];
       const candidate = {
         version: 1, board, selected,
-        managementId: DrawLog.id("amida"),
+        managementId: selection.id,
         benefit: { ...config.benefits[board.prizes[result.end]] },
-        goalTitles: board.prizes.map(prize => config.benefits[prize].title),
-        drawnAt: new Date().toISOString()
+        goalTitles: board.prizes.map(prize => prizeLabel(config.benefits[prize])),
+        drawnAt: selection.drawnAt || new Date().toISOString()
       };
       // Live draws are saved before animation so a reload restores the same result.
       const claim = config.demo ? { record: candidate, fresh: true } : await DrawStore.claim(storageKey, candidate);

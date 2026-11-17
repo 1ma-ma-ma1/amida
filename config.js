@@ -1,15 +1,9 @@
-// 公開するサロン名・特典はこのファイルで変更します（特典は必ず5つ）。
+// サロン名はこのファイル、等賞は draw-log.js で変更します。
 // demo: false にすると案内が本番用になり、同じブラウザで1回に制限されます。
 window.SALON_CONFIG = {
   salonName: "リラクゼーションサロン",
   demo: true,
   // 同じキャンペーンでは同じ値を維持。変更すると再参加できます。
   campaignId: "salon-amida-2026-01",
-  benefits: [
-    { title: "特典01", description: "特典内容は、ただいま準備中です。" },
-    { title: "特典02", description: "特典内容は、ただいま準備中です。" },
-    { title: "特典03", description: "特典内容は、ただいま準備中です。" },
-    { title: "特典04", description: "特典内容は、ただいま準備中です。" },
-    { title: "特典05", description: "特典内容は、ただいま準備中です。" }
-  ]
+  benefits: DrawPrizes
 };

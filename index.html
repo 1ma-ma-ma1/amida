@@ -8,10 +8,10 @@
   <title>癒やしのあみだくじ</title>
   <link rel="icon" href="./leaf.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./style.css">
+  <script src="./draw-log.js?v=2" defer></script>
   <script src="./config.js" defer></script>
   <script src="./amida.js" defer></script>
   <script src="./storage.js" defer></script>
-  <script src="./draw-log.js" defer></script>
   <script src="./app.js" defer></script>
 </head>
 <body>
@@ -40,15 +40,15 @@
         <div class="destinations" id="destinations" role="list" aria-label="5つの特典の到着地点"></div>
       </div>
       <button class="primary-button" id="start" type="button" disabled>キャラクターを選んでください <span aria-hidden="true">→</span></button>
-      <p class="small-note" id="demo-note">特典内容は準備中です。お試しでお楽しみください。</p>
+      <p class="small-note" id="demo-note">お試しでお楽しみください。</p>
       <p class="participation-note" id="participation-note"></p>
       <noscript><p>あみだくじを使うには、ブラウザのJavaScriptを有効にしてください。</p></noscript>
     </section>
   </main>
   <section class="howto" aria-labelledby="howto-title"><h2 id="howto-title">あそび方と特典について</h2><ul><li>5体のキャラクターから、好きな1体を選んでくじを引きます。</li><li>線をたどり、5つの特典のうち1つが表示されます。</li><li>結果画面をスクリーンショットで保存し、スタッフにお見せください。</li></ul></section>
   <footer><span id="footer-name">RELAXATION SALON</span><p>こころも、からだも、ふっと軽く。</p></footer>
-  <dialog id="result-dialog" aria-labelledby="result-title" aria-describedby="result-description">
-    <div class="result-body"><p class="eyebrow">A GIFT FOR YOU</p><span id="result-icon" class="result-icon" aria-hidden="true"></span><p class="result-lead">あなたに届いたのは</p><h2 id="result-title"></h2><p id="result-description"></p><p id="result-date" class="small-note"></p><div id="draw-log" class="small-note" hidden></div><p class="result-disclaimer" id="result-disclaimer"></p><button class="primary-button" id="close-result" type="button" autofocus>結果の道をみる <span aria-hidden="true">→</span></button><p class="small-note">この画面をスクリーンショットで保存し、スタッフにお見せください。</p><button class="retry-button" id="retry" type="button" hidden>もう一度引く ↻</button></div>
+  <dialog id="result-dialog" aria-labelledby="result-heading">
+    <div class="result-body"><p class="eyebrow">A GIFT FOR YOU</p><span id="result-icon" class="result-icon" aria-hidden="true"></span><p class="result-lead">あなたに届いたのは</p><span id="result-rank" class="award-rank" hidden></span><h2 id="result-heading"><span id="result-title"></span><span id="result-discount" class="award-detail" hidden></span></h2><p id="result-date" class="small-note"></p><div id="draw-log" class="small-note" hidden></div><p class="result-disclaimer" id="result-disclaimer"></p><button class="primary-button" id="close-result" type="button" autofocus>結果の道をみる <span aria-hidden="true">→</span></button><p class="small-note">この画面をスクリーンショットで保存し、スタッフにお見せください。</p><button class="retry-button" id="retry" type="button" hidden>もう一度引く ↻</button></div>
   </dialog>
 </body>
 </html>

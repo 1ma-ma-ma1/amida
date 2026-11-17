@@ -1,51 +1,62 @@
+globalThis.DrawPrizes = [
+  {"rank":1,"title":"10分延長","description":"（1320円引き）"},
+  {"rank":2,"title":"オプション半額","description":""},
+  {"rank":3,"title":"温活無料","description":""},
+  {"rank":4,"title":"温活無料","description":""},
+  {"rank":5,"title":"スタンプ+1","description":""}
+];
+
 (() => {
   'use strict';
   const prefixes = { amida: 'AM-', roulette: 'RL-', egg: 'EG-' };
-  const enabled = () => typeof window.google?.script?.run?.withSuccessHandler === 'function';
+  const recorded = window.DrawRecording === true;
+  const pending = new Map();
 
-  function id(game) {
-    if (!enabled() || !Object.prototype.hasOwnProperty.call(prefixes, game)) return null;
-    const bytes = crypto.getRandomValues(new Uint8Array(8));
-    const suffix = [...bytes].map(byte => byte.toString(16).padStart(2, '0')).join('').toUpperCase();
-    return prefixes[game] + suffix;
-  }
-
-  function show(container, game, managementId, prize, onSaved) {
-    if (!enabled() || !managementId || container.dataset.recordId === managementId) return false;
-    container.dataset.recordId = managementId;
-    container.hidden = false;
-    const number = document.createElement('p');
-    number.textContent = '管理番号：' + managementId;
-    const status = document.createElement('p');
-    status.setAttribute('role', 'status');
-    const retry = document.createElement('button');
-    retry.type = 'button';
-    retry.textContent = '記録を再試行';
-    retry.hidden = true;
-    container.replaceChildren(number, status, retry);
-
-    function submit() {
-      retry.hidden = true;
-      status.textContent = '集計表へ記録中…';
-      function fail() {
-        status.textContent = '記録を確認できません。管理番号を残したまま再試行できます。';
-        retry.hidden = false;
-      }
-      try {
-        window.google.script.run.withSuccessHandler(response => {
-          if (response?.id !== managementId) { fail(); return; }
-          status.textContent = '集計表に記録しました。';
-          onSaved();
-        }).withFailureHandler(fail).recordDraw({ game, id: managementId, prize });
-      } catch (_) {
-        fail();
-      }
+  function requestId(game) {
+    const key = `draw-pending-v2:${game}`;
+    let id = pending.get(game);
+    try { id ||= sessionStorage.getItem(key); } catch (_) { /* Storage may be disabled in an embedded browser. */ }
+    if (!id || !new RegExp('^' + prefixes[game] + '[A-F0-9]{16}$').test(id)) {
+      const bytes = crypto.getRandomValues(new Uint8Array(8));
+      id = prefixes[game] + [...bytes].map(byte => byte.toString(16).padStart(2, '0')).join('').toUpperCase();
     }
-
-    retry.addEventListener('click', submit);
-    submit();
-    return true;
+    pending.set(game, id);
+    try { sessionStorage.setItem(key, id); } catch (_) { /* Keep retry continuity in this page. */ }
+    return id;
   }
 
-  window.DrawLog = { id, show };
+  function choose(game, localIndex) {
+    if (!recorded) return Promise.resolve({ index: localIndex, id: null });
+    const id = requestId(game);
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error('記録の応答を確認できません。')), 25000);
+      const fail = error => { clearTimeout(timer); reject(error); };
+      try {
+        window.google.script.run.withSuccessHandler(result => {
+          clearTimeout(timer);
+          if (result?.id === id && Number.isInteger(result.index) && result.index >= 0 && result.index < DrawPrizes.length) resolve(result);
+          else reject(new Error('抽選結果を確認できません。'));
+        }).withFailureHandler(fail).drawPrize({ game, id });
+      } catch (error) { fail(error); }
+    });
+  }
+
+  function finish(container, game, id) {
+    container.hidden = !id;
+    container.textContent = id ? `管理番号：${id}` : '';
+    if (id && pending.get(game) === id) {
+      pending.delete(game);
+      try { sessionStorage.removeItem(`draw-pending-v2:${game}`); } catch (_) { /* No persisted attempt exists. */ }
+    }
+  }
+
+  function render(rank, title, detail, prize) {
+    rank.hidden = !prize.rank;
+    rank.textContent = prize.rank ? `${prize.rank}等` : '';
+    title.textContent = prize.title;
+    detail.hidden = !prize.description;
+    detail.textContent = prize.description;
+  }
+
+  window.DrawLog = { choose, finish, render };
 })();

@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#f5ede1">
   <title>ご褒美ルーレット</title>
   <link rel="icon" href="../leaf.svg" type="image/svg+xml">
-  <script src="../draw-log.js"></script>
+  <script src="../draw-log.js?v=2"></script>
   <style>
     * { box-sizing: border-box; }
     :root { color-scheme: light; --ink: #3b432f; --green: #41573a; --paper: #fffbf4; --muted: #6c6556; }
@@ -188,6 +188,8 @@
       .game { padding-inline: 12px; }
       .wheel-frame { grid-template-columns: minmax(0, 1fr) 55vw minmax(0, 1fr); }
     }
+    .award-detail { display: block; font-size: .5em; margin-top: .2em; letter-spacing: 0; }
+    .award-rank { display: block; font-size: 13px; font-weight: 700; }
     [hidden] { display: none !important; }
   </style>
 </head>
@@ -208,8 +210,7 @@
       <p class="status" id="status" role="status">テスト期間中は何度でも抽選できます。</p>
       <div id="result" class="result" hidden>
         <span class="effect-label" id="effect-label"></span>
-        <h2 id="prize-title"></h2>
-        <p id="prize-description"></p>
+        <span id="prize-rank" class="award-rank" hidden></span><h2><span id="prize-title"></span><span id="prize-description" class="award-detail" hidden></span></h2>
         <div id="draw-log" hidden></div>
       </div>
       <noscript><p>抽選するには、ブラウザでJavaScriptを有効にしてください。</p></noscript>
@@ -218,14 +219,15 @@
   </main>
   <script>
     "use strict";
-    // 特典名と内容が決まったら、次の5件の title と description を差し替えます。
-    const prizes = [
-      { mark: "A", title: "ルーレット特典A", description: "特典内容は準備中です。", color: "#dfb77c", effect: "kusudama", label: "くす玉が開きました" },
-      { mark: "B", title: "ルーレット特典B", description: "特典内容は準備中です。", color: "#b9c9a0", effect: "confetti", label: "花吹雪でお祝い" },
-      { mark: "C", title: "ルーレット特典C", description: "特典内容は準備中です。", color: "#e1b9ac", effect: "popper", label: "クラッカーでお祝い" },
-      { mark: "D", title: "ルーレット特典D", description: "特典内容は準備中です。", color: "#decba5", effect: "balloons", label: "風船が舞い上がります" },
-      { mark: "E", title: "ルーレット特典E", description: "特典内容は準備中です。", color: "#bdd0c7", effect: "clap", label: "拍手でお祝い" }
+    // 盤面の色と当選演出を等賞順に設定します。
+    const sectors = [
+      { mark: "A", color: "#dfb77c", effect: "kusudama", label: "くす玉が開きました" },
+      { mark: "B", color: "#b9c9a0", effect: "confetti", label: "花吹雪でお祝い" },
+      { mark: "C", color: "#e1b9ac", effect: "popper", label: "クラッカーでお祝い" },
+      { mark: "D", color: "#decba5", effect: "balloons", label: "風船が舞い上がります" },
+      { mark: "E", color: "#bdd0c7", effect: "clap", label: "拍手でお祝い" }
     ];
+    const prizes = DrawPrizes.map((prize, i) => ({ ...prize, ...sectors[i] }));
     const $ = id => document.getElementById(id);
     const wheel = $("wheel");
     const stage = wheel.parentElement;
@@ -340,7 +342,6 @@
 
     draw.addEventListener("click", async () => {
       draw.disabled = true;
-      let recording = false;
       clearTimeout(cleanup);
       clearCelebration();
       result.hidden = true;
@@ -349,7 +350,8 @@
       status.classList.remove("status--announced");
       status.textContent = "抽選中です…";
       try {
-        const index = choosePrize();
+        const selection = await DrawLog.choose("roulette", choosePrize());
+        const index = selection.index;
         const prize = prizes[index];
         const target = (360 - index * sectorAngle) % 360;
         const travel = 360 * 5 + (target - rotation + 360) % 360;
@@ -371,25 +373,20 @@
         rotation = target;
         wheel.style.setProperty("--label-angle", `${-target}deg`);
         $("effect-label").textContent = prize.label;
-        $("prize-title").textContent = prize.title;
-        $("prize-description").textContent = prize.description;
+        DrawLog.render($("prize-rank"), $("prize-title"), $("prize-description"), prize);
         wheel.children[index].classList.add("is-winner");
         result.hidden = false;
         if (!reduceMotion.matches) result.classList.add("show-win");
         status.classList.add("status--announced");
         status.textContent = `${prize.title}が当たりました。`;
         celebrate(prize.effect);
-        const managementId = DrawLog.id("roulette");
-        if (managementId) {
-          recording = true;
-          DrawLog.show($("draw-log"), "roulette", managementId, prize.title, () => { draw.disabled = false; });
-        }
+        DrawLog.finish($("draw-log"), "roulette", selection.id);
       } catch (_) {
         status.classList.remove("status--announced");
         status.textContent = "抽選できませんでした。もう一度お試しください。";
       } finally {
         stage.classList.remove("is-spinning");
-        if (!recording) draw.disabled = false;
+        draw.disabled = false;
       }
     });
   </script>
