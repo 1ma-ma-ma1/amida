@@ -1,12 +1,13 @@
 (() => {
   'use strict';
+  const prefixes = { amida: 'AM-', roulette: 'RL-', egg: 'EG-' };
   const enabled = () => typeof window.google?.script?.run?.withSuccessHandler === 'function';
 
   function id(game) {
-    if (!enabled()) return null;
+    if (!enabled() || !Object.prototype.hasOwnProperty.call(prefixes, game)) return null;
     const bytes = crypto.getRandomValues(new Uint8Array(8));
     const suffix = [...bytes].map(byte => byte.toString(16).padStart(2, '0')).join('').toUpperCase();
-    return (game === 'amida' ? 'AM-' : 'RL-') + suffix;
+    return prefixes[game] + suffix;
   }
 
   function show(container, game, managementId, prize, onSaved) {

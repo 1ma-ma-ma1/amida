@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f1e9f2">
+  <title>たまごのご褒美くじ</title>
+  <link rel="icon" href="../leaf.svg" type="image/svg+xml">
+  <script src="../draw-log.js" defer></script>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; color: #443750; background: radial-gradient(ellipse at 15% 5%,#f8e2e5,transparent 55%), radial-gradient(ellipse at 95% 35%,#dceee6,transparent 56%), #f2ebf7; font: 15px/1.7 "Yu Gothic", Meiryo, sans-serif; }
+    main { width: min(100% - 28px, 540px); margin: auto; padding: 24px 0 38px; text-align: center; }
+    .brand { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; color: #64566d; }
+    h1,h2 { margin: 0; font-family: "Yu Mincho", "Hiragino Mincho ProN", Georgia, serif; }
+    h1 { margin: 4px 0; font-size: clamp(25px, 7vw, 36px); }
+    .intro { margin: 0 0 14px; font-size: 13px; }
+    .game { border: 1px solid #e5d5e9; background: #fffafcee; border-radius: 22px; padding: 17px 15px; box-shadow: 0 12px 35px #67447616; }
+    .instruction { min-height: 25px; margin: 0 0 12px; font-weight: bold; }
+    .eggs { display: grid; grid-template-columns: repeat(6,minmax(0,1fr)); gap: 12px 8px; max-width: 350px; margin: auto; }
+    .egg { grid-column: span 2; display: grid; place-items: center; gap: 6px; height: 118px; padding: 8px 2px 3px; background: #f9f4fa; border: 1px solid #eaddeb; border-radius: 15px; font: inherit; font-size: 12px; font-weight: bold; color: #5a4865; cursor: pointer; }
+    .egg:nth-child(4) { grid-column: 2 / span 2; }
+    .egg:nth-child(5) { grid-column: 4 / span 2; }
+    .egg:hover:enabled { background: #f2e8f5; }
+    button:focus-visible { outline: 3px solid #876295; outline-offset: 2px; }
+    .egg:disabled { cursor: default; }
+    .egg:disabled:not(.chosen) { opacity: .46; }
+    .egg.chosen { background: #f1e6f5; border-color: #c2a2cb; }
+    .shell { position: relative; display: block; width: min(64px, 90%); aspect-ratio: .80; isolation: isolate; }
+    .half { position: absolute; display: block; inset: 0; border: 2px solid #65437040; border-radius: 51% 51% 47% 47% / 62% 62% 38% 38%; background: var(--pattern), var(--color); box-shadow: inset 5px 4px 12px #fff9, inset -5px -3px 9px #5a376127; }
+    .top { clip-path: polygon(0 0,100% 0,100% 52%,78% 45%,64% 59%,48% 43%,31% 56%,17% 47%,0 56%); }
+    .bottom { clip-path: polygon(0 55%,17% 46%,31% 55%,48% 42%,64% 58%,78% 44%,100% 51%,100% 100%,0 100%); }
+    .egg:nth-child(1) { --color:#f7d378; --pattern:repeating-linear-gradient(-15deg,transparent 0 11px,#fff0ac 12px 16px); }
+    .egg:nth-child(2) { --color:#9cd4e6; --pattern:radial-gradient(circle,#f5fcff 0 3px,transparent 3.5px) 0 0 / 16px 16px; }
+    .egg:nth-child(3) { --color:#f3a8ba; --pattern:repeating-linear-gradient(45deg,transparent 0 15px,#ffe1eb 16px 22px); }
+    .egg:nth-child(4) { --color:#bfa9ed; --pattern:radial-gradient(ellipse,#eae0fc 0 4px,transparent 4.5px) 0 0 / 14px 19px; }
+    .egg:nth-child(5) { --color:#b2d9a2; --pattern:repeating-linear-gradient(0deg,transparent 0 14px,#e4f5d9 15px 21px); }
+    .spark { position: absolute; z-index: -1; inset: 17%; opacity: 0; background: #f7c85e; clip-path: polygon(50% 0,64% 34%,100% 50%,64% 64%,50% 100%,36% 64%,0 50%,36% 34%); }
+    .cracking .shell { animation: shake .30s ease both; }
+    .cracking .top { animation: lift .73s ease-out both; }
+    .cracking .bottom { animation: settle .73s ease-out both; }
+    .cracking .spark { animation: glow .73s ease-out both; }
+    .opened .top { transform: translate(9px,-16px) rotate(22deg); }
+    .opened .bottom { transform: translateY(8px) rotate(-8deg); }
+    .opened .spark { opacity: 1; }
+    @keyframes shake { 25% { rotate:-8deg; } 65% { rotate:8deg; } }
+    @keyframes lift { 0%,36% { transform:none; } 100% { transform:translate(9px,-16px) rotate(22deg); } }
+    @keyframes settle { 0%,36% { transform:none; } 100% { transform:translateY(8px) rotate(-8deg); } }
+    @keyframes glow { 0%,36% { opacity:0; scale:.4; } 72% { scale:1.2; } 100% { opacity:1; scale:1; } }
+    .result { margin-top: 16px; padding: 16px; background: #fbf0d9; border: 1px solid #ead8b2; border-radius: 16px; overflow-wrap: anywhere; }
+    .result h2 { font-size: 24px; }
+    .result p { margin: 4px 0 0; font-size: 13px; }
+    .retry, #draw-log button { min-height: 44px; padding: 7px 18px; margin-top: 13px; border: 0; border-radius: 9px; background: #695477; color: white; font: inherit; cursor: pointer; }
+    .retry:disabled { opacity: .55; cursor: wait; }
+    .note { margin: 11px 0 0; color: #695b72; font-size: 12px; }
+    [hidden] { display: none !important; }
+    @media (prefers-reduced-motion: reduce) { .cracking * { animation: none !important; } }
+  </style>
+</head>
+<body>
+  <main>
+    <header><div class="brand"><img src="../leaf.svg" width="25" height="25" alt="">リラクゼーションサロン</div><h1>たまごのご褒美くじ</h1><p class="intro">5つのたまごから、好きなひとつを選んでください。</p></header>
+    <section class="game" aria-label="たまごの抽選">
+      <p id="instruction" class="instruction" role="status">どのたまごを選びますか？</p>
+      <div class="eggs" id="eggs"></div>
+      <div class="result" id="result" hidden>
+        <h2 id="prize"></h2><p id="description"></p><div id="draw-log" hidden></div>
+      </div>
+      <button id="retry" class="retry" type="button" hidden>もう一度引く</button>
+      <p class="note">テスト版は何度でも遊べます。結果はスクリーンショットで保存できます。</p>
+      <noscript><p>抽選するには、JavaScriptを有効にしてください。</p></noscript>
+    </section>
+  </main>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      'use strict';
+      // 特典が決まったら title と description を更新します。
+      const prizes = [
+        { title: 'たまご特典A', description: '特典内容は準備中です。' },
+        { title: 'たまご特典B', description: '特典内容は準備中です。' },
+        { title: 'たまご特典C', description: '特典内容は準備中です。' },
+        { title: 'たまご特典D', description: '特典内容は準備中です。' },
+        { title: 'たまご特典E', description: '特典内容は準備中です。' }
+      ];
+      const $ = id => document.getElementById(id);
+      const retry = $('retry');
+      const eggs = prizes.map((_, index) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'egg';
+        button.innerHTML = '<span class="shell" aria-hidden="true"><i class="spark"></i><i class="half top"></i><i class="half bottom"></i></span><span></span>';
+        button.lastElementChild.textContent = (index + 1) + '番のたまご';
+        button.addEventListener('click', () => draw(button));
+        $('eggs').append(button);
+        return button;
+      });
+
+      function choosePrize() {
+        const random = new Uint8Array(1);
+        const limit = Math.floor(256 / prizes.length) * prizes.length;
+        do { crypto.getRandomValues(random); } while (random[0] >= limit);
+        return prizes[random[0] % prizes.length];
+      }
+
+      async function draw(button) {
+        if (button.disabled) return;
+        eggs.forEach(egg => { egg.disabled = true; });
+        const prize = choosePrize();
+        button.classList.add('chosen', 'cracking');
+        $('instruction').textContent = 'たまごの中には…';
+        if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          await new Promise(resolve => setTimeout(resolve, 730));
+        }
+        button.classList.remove('cracking');
+        button.classList.add('opened');
+        $('prize').textContent = prize.title;
+        $('description').textContent = prize.description;
+        $('result').hidden = false;
+        $('instruction').textContent = prize.title + 'が当たりました！';
+        retry.hidden = false;
+        const managementId = window.DrawLog?.id('egg');
+        retry.disabled = Boolean(managementId);
+        if (managementId) {
+          DrawLog.show($('draw-log'), 'egg', managementId, prize.title, () => { retry.disabled = false; });
+        }
+      }
+
+      retry.addEventListener('click', () => {
+        $('result').hidden = true;
+        $('draw-log').hidden = true;
+        retry.hidden = true;
+        $('instruction').textContent = 'どのたまごを選びますか？';
+        eggs.forEach(egg => { egg.classList.remove('chosen', 'opened'); egg.disabled = false; });
+        eggs[0].focus();
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,6 +1,7 @@
 const DRAW_PAGES = {
   amida: { tab: 'あみだくじ', path: '', prefix: 'AM-' },
-  roulette: { tab: 'ルーレット', path: 'roulette/', prefix: 'RL-' }
+  roulette: { tab: 'ルーレット', path: 'roulette/', prefix: 'RL-' },
+  egg: { tab: 'たまご抽選', path: 'egg/', prefix: 'EG-' }
 };
 const DRAW_HEADERS = ['抽選日時', '当選等賞', '管理番号', '氏名'];
 const DRAW_ASSETS = 'https://1ma-ma-ma1.github.io/amida/';
@@ -12,7 +13,8 @@ function doGet(event) {
     const url = ScriptApp.getService().getUrl();
     return HtmlService.createHtmlOutput('<!doctype html><html lang="ja"><head><base target="_top"></head><body>' +
       '<h1>スタッフ用・抽選記録</h1><ul><li><a href="' + url + '?game=amida">あみだくじ</a></li>' +
-      '<li><a href="' + url + '?game=roulette">ルーレット</a></li></ul></body></html>')
+      '<li><a href="' + url + '?game=roulette">ルーレット</a></li>' +
+      '<li><a href="' + url + '?game=egg">たまごのご褒美くじ</a></li></ul></body></html>')
       .addMetaTag('viewport', 'width=device-width, initial-scale=1');
   }
   const page = DRAW_PAGES[game];
