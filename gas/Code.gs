@@ -12,17 +12,49 @@ const DRAW_ASSETS = 'https://1ma-ma-ma1.github.io/amida/';
 
 function doGet(event) {
   const game = event && event.parameter && event.parameter.game;
+  if (!game) return drawMenu_();
   if (!Object.prototype.hasOwnProperty.call(DRAW_PAGES, game)) {
-    const url = ScriptApp.getService().getUrl();
-    const links = Object.keys(DRAW_PAGES).map(key => '<li><a href="' + url + '?game=' + key + '">' + DRAW_PAGES[key].name + '</a></li>').join('');
-    return HtmlService.createHtmlOutput('<!doctype html><html lang="ja"><head><meta name="viewport" content="width=device-width,initial-scale=1"><base target="_top"></head><body><main><h1>ご褒美抽選</h1><ul>' + links + '</ul></main></body></html>');
+    return HtmlService.createHtmlOutput('<p>抽選方法が見つかりません。メニューから選び直してください。</p>');
   }
   const page = DRAW_PAGES[game];
   const source = UrlFetchApp.fetch(DRAW_ASSETS + page.path).getContentText('UTF-8');
+  // 静的アセットはGitHub Pagesから配信し、抽選処理だけGASのgoogle.script.runを使用する。
+  // HTML内の相対URLは絶対URLに置換。戻るリンクは本番GASのメニューへ。
+  const base = DRAW_ASSETS + page.path;
   const html = source.replace('<head>', '<head><script>window.DrawRecording = true;</script>')
-    .replace(/(src|href)="(\.\.\/|\.\/)([^"<>]*)"/g,
-      (_, attr, parent, asset) => attr + '="' + DRAW_ASSETS + (parent === '../' ? '' : page.path) + asset + '"');
+    .replace(/(src|href)="([^"<>]+)"/g, function(full, attr, url) {
+      if (url === '../#draw-menu' || (game === 'amida' && url === './')) {
+        return attr + '="' + ScriptApp.getService().getUrl() + '"';
+      }
+      if (/^(?:https?:|data:|mailto:|tel:|#)/i.test(url)) return full;
+      return attr + '="' + resolveDrawUrl_(base, url) + '"';
+    });
   return HtmlService.createHtmlOutput(html).setTitle(page.name)
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+}
+
+function resolveDrawUrl_(base, path) {
+  const parts = (base + path).replace(/^https:\/\//, '').split('/');
+  const host = parts.shift(), output = [];
+  parts.forEach(function(part) {
+    if (part === '..') output.pop();
+    else if (part && part !== '.') output.push(part);
+  });
+  return 'https://' + host + '/' + output.join('/');
+}
+
+function drawMenu_() {
+  const root = ScriptApp.getService().getUrl();
+  const cards = Object.keys(DRAW_PAGES).map(function(key, i) {
+    const game = DRAW_PAGES[key];
+    return '<a class="choice" href="' + root + '?game=' + key + '"><span class="num">0' + (i + 1) +
+      '</span><strong>' + game.name + '</strong><small>タップして抽選へ</small></a>';
+  }).join('');
+  const html = '<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
+    '<style>:root{color-scheme:light}*{box-sizing:border-box}body{margin:0;background:#f7f6f0;color:#34483d;font:14px/1.8 "Yu Gothic",Meiryo,sans-serif}main{max-width:680px;margin:auto;padding:42px 18px 60px}p{text-align:center;color:#778075;font-size:12px}h1{text-align:center;font:500 31px/1.6 "Yu Mincho",serif}.eyebrow{color:#b08d50;letter-spacing:.2em}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.choice{min-height:125px;background:#fffefa;border:1px solid #d6ddcf;border-radius:18px;padding:19px;color:#34483d;text-decoration:none;display:flex;flex-direction:column;justify-content:center;box-shadow:0 8px 22px #34483d10}.choice:focus-visible{outline:3px solid #b08d50}.num{color:#b08d50;font-size:11px}.choice strong{font:500 19px/1.7 "Yu Mincho",serif}.choice small{color:#778075}@media(max-width:420px){.grid{grid-template-columns:1fr}.choice{min-height:93px}}</style></head><body>' +
+    '<main><p class="eyebrow">A LITTLE GIFT FOR YOU</p><h1>お好きな抽選をお選びください</h1><p>4つの抽選からお好きなものを選択してください。</p><nav class="grid">' +
+    cards + '</nav><p>抽選後は受付番号と結果をスタッフにお見せください。</p></main></body></html>';
+  return HtmlService.createHtmlOutput(html).setTitle('ご褒美抽選')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
 
@@ -83,7 +115,7 @@ function drawPrize(input) {
       const result=sheet.getRange(row,3).getDisplayValue();
       const rank=/^([1-5])等 /.exec(result);
       if(!rank||sheet.getRange(row,2).getDisplayValue()!==page.name)throw new Error('受付番号が重複しました。');
-      return {id,index:Number(rank[1])-1,drawnAt:sheet.getRange(row,1).getValue().toISOString()};
+      return {id,index:Number(rank[1])-1,drawnAt:new Date(sheet.getRange(row,1).getValue()).toISOString()};
     }
     const index=Math.floor(Math.random()*prizes.length);
     const p=prizes[index],date=new Date(),row=last+1;
@@ -95,3 +127,7 @@ function drawPrize(input) {
     return {id,index,drawnAt:date.toISOString()};
   }finally{lock.releaseLock();}
 }
+
+// 付与済みへの変更はスタッフが管理表のE列を直接操作します。
+// 受付番号は一意で、同じ受付番号の再送信は既存の抽選結果を返し、行を増やしません。
+// 本人確認を行わないため、別の受付番号での再抽選はシステムだけでは防げません。
