@@ -226,12 +226,12 @@
       let selection;
       try {
         selection = await DrawLog.choose("amida", board.prizes[result.end]);
-      } catch (_) {
+      } catch (error) {
         state = "choosing";
         choices.forEach(button => button.disabled = false);
         startButton.disabled = false;
         startButton.textContent = "もう一度試す →";
-        $("instruction").textContent = "抽選を確認できませんでした。もう一度お試しください。";
+        $("instruction").textContent = "抽選の記録に失敗しました：" + (error && error.message ? error.message : String(error)) + "。スタッフにお知らせください。";
         return;
       }
       const originalColumn = board.prizes.indexOf(selection.index);
@@ -246,7 +246,10 @@
       // Live draws are saved before animation so a reload restores the same result.
       const claim = config.demo ? { record: candidate, fresh: true } : await DrawStore.claim(storageKey, candidate);
       await showRecord(claim.record, claim.fresh);
-    } catch (_) { failClosed(); }
+    } catch (error) {
+      failClosed();
+      $("instruction").textContent = "抽選処理でエラーが発生しました：" + (error && error.message ? error.message : String(error));
+    }
   });
   $("close-result").addEventListener("click", () => {
     if (!completedDraw) return;
