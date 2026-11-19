@@ -20,6 +20,24 @@ const AMIDA_PRIZES = [
   { rank: 5, title: 'スタンプ+1', description: '' }
 ];
 
+// GitHub画面からの通信専用。HTMLは返さず、記録が確定した結果だけを返します。
+function doPost(event) {
+  let result;
+  try {
+    const body = event && event.postData && event.postData.contents;
+    if (typeof body !== 'string' || body.length > 4000) throw new Error('リクエストが不正です。');
+    const input = JSON.parse(body);
+    if (input && input.action === 'health') {
+      result = { success: true, protocol: 3, transport: 'json', campaignId: DRAW_CAMPAIGN };
+    } else {
+      result = drawPrize(input);
+    }
+  } catch (error) {
+    result = { success: false, error: String(error.message || error) };
+  }
+  return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+}
+
 function doGet(event) {
   try {
     const game = event && event.parameter && event.parameter.game;
@@ -169,5 +187,4 @@ function drawAmidaPrize(input) {
 
 // 同じ参加IDの再送は1行にまとめる。別端末・保存データ削除・新規IDによる再抽選は防げない。
 // 特典付与はスタッフが既存のE列で管理。スプレッドシートは一般公開しない。
-
 

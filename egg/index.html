@@ -6,7 +6,8 @@
   <meta name="theme-color" content="#f1e9f2">
   <title>たまごのご褒美くじ</title>
   <link rel="icon" href="../leaf.svg" type="image/svg+xml">
-  <script src="../draw-log.js?v=2" defer></script>
+  <script src="../storage.js?v=20261119-json1" defer></script>
+  <script src="../draw-log.js?v=20261119-json1" defer></script>
   <style>
     * { box-sizing: border-box; }
     body { margin: 0; min-height: 100vh; color: #443750; background: radial-gradient(ellipse at 15% 5%,#f8e2e5,transparent 55%), radial-gradient(ellipse at 95% 35%,#dceee6,transparent 56%), #f2ebf7; font: 15px/1.7 "Yu Gothic", Meiryo, sans-serif; }
@@ -61,7 +62,7 @@
 </head>
 <body>
   <main>
-    <a href="../#draw-menu" class="integrated-back" style="display:inline-block;min-height:36px;padding:6px 0;margin-bottom:5px;color:inherit;text-underline-offset:3px;font-size:12px">← 抽選一覧へ戻る</a>
+    <a href="https://1ma-ma-ma1.github.io/salon-nfc-menu/lottery/" class="integrated-back" style="display:inline-block;min-height:36px;padding:6px 0;margin-bottom:5px;color:inherit;text-underline-offset:3px;font-size:12px">← 抽選一覧へ戻る</a>
     <header><div class="brand"><img src="../leaf.svg" width="25" height="25" alt="">リラクゼーションサロン</div><h1>たまごのご褒美くじ</h1><p class="intro">5つのたまごから、好きなひとつを選んでください。</p></header>
     <section class="game" aria-label="たまごの抽選">
       <p id="instruction" class="instruction" role="status">どのたまごを選びますか？</p>
@@ -70,7 +71,7 @@
         <span id="prize-rank" class="award-rank" hidden></span><h2><span id="prize"></span><span id="description" class="award-detail" hidden></span></h2><div id="draw-log" hidden></div>
       </div>
       <button id="retry" class="retry" type="button" hidden>もう一度引く</button>
-      <p class="note">テスト版は何度でも遊べます。結果はスクリーンショットで保存できます。</p>
+      <p class="note">結果と受付番号をスタッフにお見せください。再読み込み後も同じ抽選結果になります。</p>
       <noscript><p>抽選するには、JavaScriptを有効にしてください。</p></noscript>
     </section>
   </main>

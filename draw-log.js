@@ -6,6 +6,15 @@ globalThis.DrawPrizes = [
   {"rank":5,"title":"スタンプ+1","description":""}
 ];
 if (window.DrawRuntime?.protocol === 3) globalThis.DrawPrizes = window.DrawRuntime.prizes;
+// GitHub上では画面を移動せず、JSONだけを新GASとやり取りします。
+if (!window.DrawRuntime && !window.DrawLocalDemo) {
+  window.DrawRecording = true;
+  window.DrawRuntime = {
+    protocol: 3, namespace: 'salon-nfc-json-2026', campaignId: 'salon-amida-2026-01',
+    transport: 'fetch', prizes: globalThis.DrawPrizes,
+    endpoint: 'https://script.google.com/macros/s/AKfycbzYsk-IEGAhZC6UyCWJzD-M6z151uSnfevvK3tLltwV-iox81KMqbh_E7v7B69Wa7sX9w/exec'
+  };
+}
 
 (() => {
   'use strict';
@@ -59,11 +68,15 @@ if (window.DrawRuntime?.protocol === 3) globalThis.DrawPrizes = window.DrawRunti
   function chooseAmida(id, game) {
     if (!prefixes[game] || !new RegExp('^' + prefixes[game] + '[A-F0-9]{32}$').test(id)) return Promise.reject(new Error('参加記録が不正です。'));
     return new Promise((resolve, reject) => {
-      const timer = setTimeout(() => reject(new Error('応答が届きませんでした。記録済みの可能性があるため、同じ受付番号で再確認します。')), 25000);
+      const controller = new AbortController();
+      const timer = setTimeout(() => {
+        controller.abort();
+        reject(new Error('応答が届きませんでした。記録済みの可能性があるため、同じ受付番号で再確認します。'));
+      }, 25000);
       const fail = error => { clearTimeout(timer); reject(error); };
-      try {
-        window.google.script.run.withSuccessHandler(result => {
+      const accept = result => {
           clearTimeout(timer);
+          if (result?.success === false) { reject(new Error(result.error || '記録できませんでした。')); return; }
           const prize = result?.prize;
           if (result?.protocol !== 3 || result.id !== id || result.receiptId !== id ||
               !Number.isInteger(result.index) || result.index < 0 || result.index > 4 ||
@@ -73,7 +86,20 @@ if (window.DrawRuntime?.protocol === 3) globalThis.DrawPrizes = window.DrawRunti
             return;
           }
           resolve(result);
-        }).withFailureHandler(fail).drawPrize({ game, id, protocol: 3, campaignId: window.DrawRuntime.campaignId });
+      };
+      const input = { game, id, protocol: 3, campaignId: window.DrawRuntime.campaignId };
+      try {
+        if (window.DrawRuntime.transport === 'fetch') {
+          fetch(window.DrawRuntime.endpoint, {
+            method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(input), credentials: 'omit', redirect: 'follow', signal: controller.signal
+          }).then(response => {
+            if (!response.ok) throw new Error('記録先に接続できませんでした。');
+            return response.json();
+          }).then(accept).catch(() => fail(new Error('記録の応答を確認できません。同じ受付番号で再確認してください。')));
+          return;
+        }
+        window.google.script.run.withSuccessHandler(accept).withFailureHandler(fail).drawPrize(input);
       } catch (error) { fail(error); }
     });
   }
