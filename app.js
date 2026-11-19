@@ -71,7 +71,7 @@
       else item.removeAttribute("aria-current");
     }
   }
-  function renderBoard() {
+  function renderBoard(showBridges = true) {
     $("lines").replaceChildren();
     const line = (x1, y1, x2, y2) => {
       const element = document.createElementNS("http://www.w3.org/2000/svg", "line");
@@ -79,7 +79,10 @@
       $("lines").append(element);
     };
     for (let i = 0; i < 5; i++) line(50 + 100 * i, 0, 50 + 100 * i, 300);
-    board.bridges.forEach(b => line(50 + 100 * b.col, b.y, 150 + 100 * b.col, b.y));
+    if (showBridges) board.bridges.forEach(b => line(50 + 100 * b.col, b.y, 150 + 100 * b.col, b.y));
+    $("ladder").setAttribute("aria-label", showBridges
+      ? "5本の縦線を横線でつないだあみだくじ"
+      : "5本の縦線。横線はスタート後に表示されます");
     walker.hidden = true;
     $("trace").removeAttribute("d");
     $("trace").style.strokeDasharray = "none";
@@ -102,7 +105,7 @@
     selected = null;
     completedDraw = null;
     state = "choosing";
-    renderBoard();
+    renderBoard(false);
     step(1);
     choices.forEach(button => button.disabled = false);
     $("instruction").textContent = "お好きなキャラクターを選んでください";
@@ -221,6 +224,7 @@
     }
     if (state !== "choosing" || selected === null) return;
     state = "saving";
+    renderBoard();
     choices.forEach(b => b.disabled = true);
     startButton.disabled = true;
     startButton.textContent = "あなたへの贈りものを探しています…";
@@ -343,4 +347,3 @@
   document.addEventListener("visibilitychange", () => { if (!document.hidden) sync(); });
   init();
 })();
-
