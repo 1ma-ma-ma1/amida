@@ -5,6 +5,7 @@ globalThis.DrawPrizes = [
   {"rank":4,"title":"温活無料","description":""},
   {"rank":5,"title":"スタンプ+1","description":""}
 ];
+if (window.DrawRuntime?.protocol === 3) globalThis.DrawPrizes = window.DrawRuntime.prizes;
 
 (() => {
   'use strict';
@@ -25,8 +26,16 @@ globalThis.DrawPrizes = [
     return id;
   }
 
-  function choose(game, localIndex, stableId) {
-    if (window.DrawRuntime?.protocol === 3) return chooseAmida(stableId, game);
+  async function choose(game, localIndex, stableId) {
+    if (window.DrawRuntime?.protocol === 3) {
+      if (!stableId) {
+        if (!prefixes[game]) throw new Error('抽選方法が不正です。');
+        const key = 'gas-v3:' + window.DrawRuntime.namespace + ':' + window.DrawRuntime.campaignId + ':' + game;
+        const attempt = await DrawStore.claim(key, { id: newId(game) });
+        stableId = attempt.record.id;
+      }
+      return chooseAmida(stableId, game);
+    }
     if (!recorded) return Promise.resolve({ index: localIndex, id: null });
     const id = requestId(game);
     return new Promise((resolve, reject) => {
@@ -42,13 +51,13 @@ globalThis.DrawPrizes = [
     });
   }
 
-  function newId() {
+  function newId(game = 'amida') {
     const bytes = crypto.getRandomValues(new Uint8Array(16));
-    return 'AM-' + [...bytes].map(byte => byte.toString(16).padStart(2, '0')).join('').toUpperCase();
+    return prefixes[game] + [...bytes].map(byte => byte.toString(16).padStart(2, '0')).join('').toUpperCase();
   }
 
   function chooseAmida(id, game) {
-    if (game !== 'amida' || !/^AM-[A-F0-9]{32}$/.test(id)) return Promise.reject(new Error('参加記録が不正です。'));
+    if (!prefixes[game] || !new RegExp('^' + prefixes[game] + '[A-F0-9]{32}$').test(id)) return Promise.reject(new Error('参加記録が不正です。'));
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => reject(new Error('応答が届きませんでした。記録済みの可能性があるため、同じ受付番号で再確認します。')), 25000);
       const fail = error => { clearTimeout(timer); reject(error); };

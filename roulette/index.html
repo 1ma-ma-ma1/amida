@@ -353,7 +353,7 @@
       try {
         const selection = await DrawLog.choose("roulette", choosePrize());
         const index = selection.index;
-        const prize = prizes[index];
+        const prize = { ...prizes[index], ...(selection.prize || {}) };
         const target = (360 - index * sectorAngle) % 360;
         const travel = 360 * 5 + (target - rotation + 360) % 360;
         if (!reduceMotion.matches && typeof wheel.animate === "function") {
@@ -382,6 +382,7 @@
         status.textContent = `${prize.title}が当たりました。`;
         celebrate(prize.effect);
         DrawLog.finish($("draw-log"), "roulette", selection.id);
+        if (window.DrawRecording === true) draw.textContent = '結果を再表示';
       } catch (_) {
         status.classList.remove("status--announced");
         status.textContent = "抽選できませんでした。もう一度お試しください。";
@@ -393,3 +394,4 @@
   </script>
 </body>
 </html>
+
