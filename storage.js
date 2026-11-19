@@ -37,5 +37,24 @@
       tx.onabort = tx.onerror = () => reject(tx.error || new Error("Save failed"));
     });
   }
-  root.DrawStore = Object.freeze({ read, claim });
+  async function release(key, completedId) {
+    const db = await open();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction("draws", "readwrite");
+      const store = tx.objectStore("draws");
+      let released = false;
+      const request = store.get(key);
+      request.onsuccess = () => {
+        if (request.result?.id !== completedId) return;
+        // 完了した参加情報を保存し、現在の参加枠だけを空ける。
+        store.put(request.result, key + ':past:' + completedId);
+        store.delete(key);
+        released = true;
+      };
+      tx.oncomplete = () => resolve(released);
+      tx.onabort = tx.onerror = () => reject(tx.error || new Error("Reset failed"));
+    });
+  }
+  root.DrawStore = Object.freeze({ read, claim, release });
 })(globalThis);
+

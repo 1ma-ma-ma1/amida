@@ -11,6 +11,7 @@ if (!window.DrawRuntime && !window.DrawLocalDemo) {
   window.DrawRecording = true;
   window.DrawRuntime = {
     protocol: 3, namespace: 'salon-nfc-json-2026', campaignId: 'salon-amida-2026-01',
+    testMode: true, // テスト終了時はfalseに戻す。GASでの結果確定・記録は継続する。
     transport: 'fetch', prizes: globalThis.DrawPrizes,
     endpoint: 'https://script.google.com/macros/s/AKfycbzYsk-IEGAhZC6UyCWJzD-M6z151uSnfevvK3tLltwV-iox81KMqbh_E7v7B69Wa7sX9w/exec'
   };
@@ -21,6 +22,22 @@ if (!window.DrawRuntime && !window.DrawLocalDemo) {
   const prefixes = { amida: 'AM-', roulette: 'RL-', egg: 'EG-', kuji: 'KJ-' };
   const recorded = window.DrawRecording === true;
   const pending = new Map();
+  const confirmed = new Set();
+  function attemptKey(game) {
+    return 'gas-v3:' + window.DrawRuntime.namespace + ':' + window.DrawRuntime.campaignId + (game === 'amida' ? '' : ':' + game);
+  }
+  async function restart(game, id) {
+    if (!window.DrawRuntime?.testMode || !confirmed.has(game + ':' + id)) throw new Error('確定済みのテスト結果だけ再抽選できます。');
+    return DrawStore.release(attemptKey(game), id);
+  }
+  if (typeof document !== 'undefined') document.addEventListener('DOMContentLoaded', () => {
+    if (!window.DrawRuntime?.testMode) return;
+    const note = document.createElement('p');
+    note.id = 'draw-test-notice';
+    note.textContent = 'テスト期間中：何度でも抽選できます。各回の結果は台帳に記録されます。';
+    note.style.cssText = 'margin:12px auto;padding:12px;max-width:640px;text-align:center;background:#fff2d5;color:#594823;border-radius:10px;font-size:13px';
+    document.body.prepend(note);
+  });
 
   function requestId(game) {
     const key = `draw-pending-v2:${game}`;
@@ -39,7 +56,7 @@ if (!window.DrawRuntime && !window.DrawLocalDemo) {
     if (window.DrawRuntime?.protocol === 3) {
       if (!stableId) {
         if (!prefixes[game]) throw new Error('抽選方法が不正です。');
-        const key = 'gas-v3:' + window.DrawRuntime.namespace + ':' + window.DrawRuntime.campaignId + ':' + game;
+        const key = attemptKey(game);
         const attempt = await DrawStore.claim(key, { id: newId(game) });
         stableId = attempt.record.id;
       }
@@ -85,6 +102,7 @@ if (!window.DrawRuntime && !window.DrawLocalDemo) {
             reject(new Error('抽選結果を確認できません。同じ受付番号で再確認してください。'));
             return;
           }
+          confirmed.add(game + ':' + id);
           resolve(result);
       };
       const input = { game, id, protocol: 3, campaignId: window.DrawRuntime.campaignId };
@@ -107,6 +125,22 @@ if (!window.DrawRuntime && !window.DrawLocalDemo) {
   function finish(container, game, id) {
     container.hidden = !id;
     container.textContent = id ? `受付番号：${id}` : '';
+    if (id && window.DrawRuntime?.testMode && confirmed.has(game + ':' + id)) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = 'もう一度抽選する（テスト）';
+      button.style.cssText = 'display:block;min-height:44px;margin:14px auto 0;padding:10px 18px;border:0;border-radius:10px;background:#526657;color:#fff;font:inherit;cursor:pointer';
+      button.addEventListener('click', async () => {
+        button.disabled = true;
+        try {
+          if (!await restart(game, id)) throw new Error('別の画面で参加状態が変わりました。');
+          location.reload();
+        } catch (_) {
+          button.textContent = '再抽選を開始できません。画面を更新してください。';
+        }
+      });
+      container.append(button);
+    }
     if (window.DrawRuntime?.protocol === 3) return; // 完了後も参加IDを保持して再送・複数タブを同じ結果へまとめる。
     if (id && pending.get(game) === id) {
       pending.delete(game);
@@ -122,6 +156,6 @@ if (!window.DrawRuntime && !window.DrawLocalDemo) {
     detail.textContent = prize.description;
   }
 
-  window.DrawLog = { choose, finish, render, newId };
+  window.DrawLog = { choose, finish, render, newId, restart };
 })();
 

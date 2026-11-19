@@ -55,7 +55,7 @@
   const storageKey = "live:" + config.campaignId;
   const attemptKey = "gas-v3:" + window.DrawRuntime?.namespace + ":" + config.campaignId;
   let attempt = null;
-  $("participation-note").textContent = config.demo ? "テスト期間中は何度でも引き直せます。" : "参加はこのブラウザで1回限り。再アクセスで結果を確認できます。";
+  $("participation-note").textContent = (config.demo || window.DrawRuntime?.testMode) ? "テスト期間中は結果画面から何度でも抽選できます。" : "参加はこのブラウザで1回限り。再アクセスで結果を確認できます。";
   $("retry").hidden = !config.demo;
   $("salon-name").textContent = config.salonName;
   $("footer-name").textContent = config.salonName;
@@ -347,3 +347,4 @@
   document.addEventListener("visibilitychange", () => { if (!document.hidden) sync(); });
   init();
 })();
+
