@@ -130,6 +130,19 @@
 @media (prefers-reduced-motion: reduce) { #walker .mascot { animation: none; } }
 
 /* Illustrated rewards share the same proportions on the board and in the result. */
+/* 参照の4体と同じ世界観の犬。1枚の等間隔5列アトラスを選択・移動に共用。 */
+.mascot--sprite { width:clamp(38px,11vw,60px);height:auto;aspect-ratio:3/5;background-image:url('./characters.png?v=amida-only-3');background-repeat:no-repeat;background-size:500% 100%; }
+.mascot--bear { background-position:0% 0; }
+.mascot--pig { background-position:25% 0; }
+.mascot--panda { background-position:50% 0; }
+.mascot--mouse { background-position:75% 0; }
+.mascot--dog { background-position:100% 0; }
+.choices .choice { height:auto;min-height:112px;padding:4px 0 8px; }
+.choice .mascot--sprite { margin:0 auto; }
+#walker { transform:translate(-50%,-80%); }
+#walker .mascot--sprite { width:48px; }
+#walker[data-motion="waiting"] .mascot { animation:mascot-stride .45s ease-in-out infinite alternate; }
+@media(prefers-reduced-motion:reduce) { #walker[data-motion] .mascot { animation:none; } }
 .destination {
   align-self: stretch;
   align-content: start;

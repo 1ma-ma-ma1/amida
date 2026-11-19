@@ -4,8 +4,8 @@
   const config = window.SALON_CONFIG;
   const live = window.DrawRuntime?.protocol === 3;
   const characters = [
-    ["リーフィ", "leaf"], ["モコ", "cloud"], ["コロン", "nut"],
-    ["ルル", "petal"], ["しずく", "dew"]
+    ["リラくま", "bear"], ["ぶた", "pig"], ["ぱんだ", "panda"],
+    ["ねずみ", "mouse"], ["いぬ", "dog"]
   ];
   const rewards = [
     ["star", "きらめき"], ["chest", "宝箱"], ["coin", "コイン"],
@@ -26,9 +26,8 @@
   const walker = $("walker");
   function mascot(shape) {
     const avatar = document.createElement("span");
-    avatar.className = "mascot mascot--" + shape;
+    avatar.className = "mascot mascot--sprite mascot--" + shape;
     avatar.setAttribute("aria-hidden", "true");
-    avatar.innerHTML = '<span class="mascot-feet"></span><span class="mascot-body"><span class="mascot-face"></span></span>';
     return avatar;
   }
   const choices = characters.map(([name, shape], index) => {
@@ -114,7 +113,14 @@
     if (focus) choices[0].focus();
   }
 
+  let animationEpoch = 0;
+  function stopMotion() {
+    animationEpoch++;
+    walker.hidden = true;
+    delete walker.dataset.motion;
+  }
   async function animateRoute(trace, shape) {
+    const epoch = ++animationEpoch;
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const length = trace.getTotalLength();
     const moves = [
@@ -143,6 +149,7 @@
       await new Promise(resolve => {
         let firstFrame;
         function frame(now) {
+          if (epoch !== animationEpoch) { resolve(); return; }
           firstFrame ??= now;
           const progress = Math.min(1, (now - firstFrame) / move.duration);
           place(distance + length * move.share * progress);
@@ -151,10 +158,17 @@
         }
         requestAnimationFrame(frame);
       });
+      if (epoch !== animationEpoch) return;
       distance += length * move.share;
     }
     place(length);
-    delete walker.dataset.motion;
+    walker.dataset.motion = "waiting";
+  }
+  function beginMotion() {
+    step(2);
+    const trace = $("trace");
+    trace.setAttribute("d", Amida.route(selected, board.bridges).path);
+    return animateRoute(trace, characters[selected][1]).catch(() => { stopMotion(); });
   }
 
   function prizeLabel(prize) {
@@ -225,6 +239,8 @@
     if (state !== "choosing" || selected === null) return;
     state = "saving";
     renderBoard();
+    // 通信や端末保存の完了を待たず、クリックと同じ処理内で動き始める。
+    let motion = animate ? beginMotion() : Promise.resolve();
     choices.forEach(b => b.disabled = true);
     startButton.disabled = true;
     startButton.textContent = "あなたへの贈りものを探しています…";
@@ -241,15 +257,21 @@
             !Number.isInteger(attempt.selected) || attempt.selected < 0 || attempt.selected > 4) {
           throw new Error("参加記録が不正です。スタッフへお知らせください。");
         }
+        const changed = selected !== attempt.selected || JSON.stringify(board) !== JSON.stringify(attempt.board);
         board = structuredClone(attempt.board);
         selected = attempt.selected;
-        renderBoard();
+        if (changed) {
+          stopMotion();
+          renderBoard();
+          motion = animate ? beginMotion() : Promise.resolve();
+        }
       }
       const result = Amida.route(selected, board.bridges);
       let selection;
       try {
         selection = await DrawLog.choose("amida", board.prizes[result.end], attempt?.id);
       } catch (error) {
+        stopMotion();
         state = "choosing";
         choices.forEach(button => button.disabled = live);
         startButton.disabled = false;
@@ -257,6 +279,9 @@
         $("instruction").textContent = "結果を確認できません：" + (error && error.message ? error.message : String(error)) + (live ? " 受付番号：" + attempt.id + "。下のボタンで再確認できます。" : "");
         return;
       }
+      // 特典は保存確認後、演出も終わってから表示する。
+      await motion;
+      stopMotion();
       const originalColumn = board.prizes.indexOf(selection.index);
       [board.prizes[result.end], board.prizes[originalColumn]] = [board.prizes[originalColumn], board.prizes[result.end]];
       const candidate = {
@@ -268,8 +293,9 @@
       };
       // GAS版は事前保存した参加IDで復元する。静的本番モードのみ結果を端末に保存。
       const claim = (live || config.demo) ? { record: candidate, fresh: true } : await DrawStore.claim(storageKey, candidate);
-      await showRecord(claim.record, animate && claim.fresh);
+      await showRecord(claim.record, false);
     } catch (error) {
+      stopMotion();
       failClosed();
       $("instruction").textContent = "抽選処理でエラーが発生しました：" + (error && error.message ? error.message : String(error));
     }
