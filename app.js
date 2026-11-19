@@ -2,6 +2,7 @@
   "use strict";
   const $ = (id) => document.getElementById(id);
   const config = window.SALON_CONFIG;
+  const live = window.DrawRuntime?.protocol === 3;
   const characters = [
     ["リーフィ", "leaf"], ["モコ", "cloud"], ["コロン", "nut"],
     ["ルル", "petal"], ["しずく", "dew"]
@@ -52,6 +53,8 @@
     return;
   }
   const storageKey = "live:" + config.campaignId;
+  const attemptKey = "gas-v3:" + window.DrawRuntime?.namespace + ":" + config.campaignId;
+  let attempt = null;
   $("participation-note").textContent = config.demo ? "テスト期間中は何度でも引き直せます。" : "参加はこのブラウザで1回限り。再アクセスで結果を確認できます。";
   $("retry").hidden = !config.demo;
   $("salon-name").textContent = config.salonName;
@@ -174,7 +177,8 @@
     trace.setAttribute("d", result.path);
     if (animate) {
       step(2);
-      await animateRoute(trace, characters[selected][1]);
+      try { await animateRoute(trace, characters[selected][1]); }
+      catch (_) { walker.hidden = true; } // 演出の失敗で確定済み結果を失わない。
     }
     trace.style.strokeDashoffset = "0";
     const benefit = record.benefit;
@@ -202,14 +206,14 @@
     }
   }
   choices.forEach(button => button.addEventListener("click", () => {
-    if (state !== "choosing") return;
+    if (state !== "choosing" || (live && attempt)) return;
     selected = Number(button.dataset.index);
     choices.forEach(b => { const active = b === button; b.classList.toggle("selected", active); b.setAttribute("aria-pressed", String(active)); });
     $("instruction").textContent = characters[selected][0] + "を選びました。";
     startButton.textContent = "このキャラクターで、くじを引く →";
     startButton.disabled = false;
   }));
-  startButton.addEventListener("click", async () => {
+  async function startDraw(animate = true) {
     if (state === "complete") {
       dialog.returnValue = "";
       if (!dialog.open) dialog.showModal();
@@ -222,16 +226,31 @@
     startButton.textContent = "あなたへの贈りものを探しています…";
     $("instruction").textContent = "線の先には、どんなご褒美が待っているでしょう。";
     try {
+      if (live) {
+        // サーバーに送る前に、複数タブ共通の参加ID・経路・キャラを原子的に確保する。
+        const claimed = await DrawStore.claim(attemptKey, {
+          version: 1, id: DrawLog.newId(), board, selected
+        });
+        attempt = claimed.record;
+        if (attempt.version !== 1 || !/^AM-[A-F0-9]{32}$/.test(attempt.id) ||
+            !attempt.board || !Array.isArray(attempt.board.bridges) ||
+            !Number.isInteger(attempt.selected) || attempt.selected < 0 || attempt.selected > 4) {
+          throw new Error("参加記録が不正です。スタッフへお知らせください。");
+        }
+        board = structuredClone(attempt.board);
+        selected = attempt.selected;
+        renderBoard();
+      }
       const result = Amida.route(selected, board.bridges);
       let selection;
       try {
-        selection = await DrawLog.choose("amida", board.prizes[result.end]);
+        selection = await DrawLog.choose("amida", board.prizes[result.end], attempt?.id);
       } catch (error) {
         state = "choosing";
-        choices.forEach(button => button.disabled = false);
+        choices.forEach(button => button.disabled = live);
         startButton.disabled = false;
         startButton.textContent = "もう一度試す →";
-        $("instruction").textContent = "抽選の記録に失敗しました：" + (error && error.message ? error.message : String(error)) + "。スタッフにお知らせください。";
+        $("instruction").textContent = "結果を確認できません：" + (error && error.message ? error.message : String(error)) + (live ? " 受付番号：" + attempt.id + "。下のボタンで再確認できます。" : "");
         return;
       }
       const originalColumn = board.prizes.indexOf(selection.index);
@@ -239,18 +258,19 @@
       const candidate = {
         version: 1, board, selected,
         managementId: selection.id,
-        benefit: { ...config.benefits[board.prizes[result.end]] },
+        benefit: { ...(live ? selection.prize : config.benefits[board.prizes[result.end]]) },
         goalTitles: board.prizes.map(prize => prizeLabel(config.benefits[prize])),
         drawnAt: selection.drawnAt || new Date().toISOString()
       };
-      // Live draws are saved before animation so a reload restores the same result.
-      const claim = config.demo ? { record: candidate, fresh: true } : await DrawStore.claim(storageKey, candidate);
-      await showRecord(claim.record, claim.fresh);
+      // GAS版は事前保存した参加IDで復元する。静的本番モードのみ結果を端末に保存。
+      const claim = (live || config.demo) ? { record: candidate, fresh: true } : await DrawStore.claim(storageKey, candidate);
+      await showRecord(claim.record, animate && claim.fresh);
     } catch (error) {
       failClosed();
       $("instruction").textContent = "抽選処理でエラーが発生しました：" + (error && error.message ? error.message : String(error));
     }
-  });
+  }
+  startButton.addEventListener("click", () => startDraw());
   $("close-result").addEventListener("click", () => {
     if (!completedDraw) return;
     [...$("destinations").children].forEach((cell, column) => {
@@ -278,6 +298,22 @@
   });
   async function init() {
     try {
+      if (live) {
+        newDraw();
+        choices.forEach(b => b.disabled = true);
+        state = "loading";
+        attempt = await DrawStore.read(attemptKey);
+        if (attempt) {
+          board = attempt.board;
+          selected = attempt.selected;
+          state = "choosing";
+          await startDraw(false);
+        } else {
+          state = "choosing";
+          choices.forEach(b => b.disabled = false);
+        }
+        return;
+      }
       if (config.demo) { newDraw(); return; }
       $("instruction").textContent = "参加記録を確認しています…";
       const record = await DrawStore.read(storageKey);
@@ -288,6 +324,16 @@
   async function sync() {
     if (config.demo || state !== "choosing") return;
     try {
+      if (live) {
+        const saved = await DrawStore.read(attemptKey);
+        if (saved && state === "choosing") {
+          attempt = saved;
+          board = saved.board;
+          selected = saved.selected;
+          await startDraw(false);
+        }
+        return;
+      }
       const record = await DrawStore.read(storageKey);
       if (record && state === "choosing") await showRecord(record, false, false);
     } catch (_) { failClosed(); }
@@ -297,3 +343,4 @@
   document.addEventListener("visibilitychange", () => { if (!document.hidden) sync(); });
   init();
 })();
+

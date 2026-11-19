@@ -6,6 +6,8 @@
 @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
 :root{--bg:#f6efe5;--paper:#fffbf5;--ink:#53483b;--muted:#897c6a;--green:#628344;--line:#d9d8c0;--gold:#b08b53}.accent{color:#7e9a56}.game-card{border-color:#e7dccb}.participation-note{text-align:center;font-size:10px;color:#867963;margin:10px 0 0}.botanical svg{filter:sepia(.12) saturate(1.35)}.result-disclaimer{margin-top:16px}.instruction{overflow-wrap:anywhere}.choice{min-width:44px;min-height:44px}
 
+/* 長い受付番号も小さな画面で折り返す。 */
+#draw-log, #instruction { overflow-wrap: anywhere; }
 /* Mascots: each body, tuft and palette is shared by the picker and the walker. */
 .choice {
   display: grid;
@@ -246,3 +248,4 @@
 
 /* ru-retto統合：amida既存デザインに合わせた抽選メニュー */
 .draw-menu{max-width:1168px;margin:0 auto;padding:0 40px}.draw-menu__heading{text-align:center;margin:0 0 18px}.draw-menu__heading>span{font-size:10px;letter-spacing:.2em;color:var(--muted)}.draw-menu__heading h2{font:500 clamp(19px,2.6vw,27px)/1.6 var(--serif);margin:7px 0;color:var(--ink)}.draw-menu__heading p{font-size:12px;color:var(--muted);margin:0}.draw-menu__grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px}.draw-menu__grid a{min-height:113px;display:flex;flex-direction:column;justify-content:center;gap:3px;text-decoration:none;color:var(--ink);padding:18px;background:var(--paper);border:1px solid var(--line);border-radius:17px;box-shadow:0 8px 30px #394b3910}.draw-menu__grid a:hover,.draw-menu__grid a:focus-visible{border-color:var(--gold);background:#fffdf7}.draw-menu__number{font:600 11px/1.5 var(--sans);color:var(--gold)}.draw-menu__grid strong{font:500 15px/1.6 var(--serif)}.draw-menu__grid small{font-size:10px;color:var(--muted)}@media(max-width:800px){.draw-menu{padding:0 18px}.draw-menu__grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.draw-menu__grid a{min-height:99px;padding:12px}.draw-menu__grid strong{font-size:14px}}@media(max-width:360px){.draw-menu__grid{grid-template-columns:1fr}}
+

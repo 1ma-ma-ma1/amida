@@ -1,9 +1,10 @@
-// サロン名はこのファイル、等賞は draw-log.js で変更します。
-// demo: false にすると案内が本番用になり、同じブラウザで1回に制限されます。
+// 店名はこのファイル、GAS版の特典は gas/Code.gs、試遊版の特典は draw-log.js で設定。
+// 新GASでは記録モード、直接のGitHub Pagesでは試遊モード。
 window.SALON_CONFIG = {
   salonName: "リラクゼーションサロン",
-  demo: true,
+  demo: window.DrawRuntime?.protocol === 3 ? false : true,
   // 同じキャンペーンでは同じ値を維持。変更すると再参加できます。
-  campaignId: "salon-amida-2026-01",
-  benefits: DrawPrizes
+  campaignId: window.DrawRuntime?.campaignId || "salon-amida-2026-01",
+  benefits: window.DrawRuntime?.prizes || DrawPrizes
 };
+

@@ -25,7 +25,8 @@ globalThis.DrawPrizes = [
     return id;
   }
 
-  function choose(game, localIndex) {
+  function choose(game, localIndex, stableId) {
+    if (window.DrawRuntime?.protocol === 3) return chooseAmida(stableId, game);
     if (!recorded) return Promise.resolve({ index: localIndex, id: null });
     const id = requestId(game);
     return new Promise((resolve, reject) => {
@@ -41,9 +42,37 @@ globalThis.DrawPrizes = [
     });
   }
 
+  function newId() {
+    const bytes = crypto.getRandomValues(new Uint8Array(16));
+    return 'AM-' + [...bytes].map(byte => byte.toString(16).padStart(2, '0')).join('').toUpperCase();
+  }
+
+  function chooseAmida(id, game) {
+    if (game !== 'amida' || !/^AM-[A-F0-9]{32}$/.test(id)) return Promise.reject(new Error('参加記録が不正です。'));
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error('応答が届きませんでした。記録済みの可能性があるため、同じ受付番号で再確認します。')), 25000);
+      const fail = error => { clearTimeout(timer); reject(error); };
+      try {
+        window.google.script.run.withSuccessHandler(result => {
+          clearTimeout(timer);
+          const prize = result?.prize;
+          if (result?.protocol !== 3 || result.id !== id || result.receiptId !== id ||
+              !Number.isInteger(result.index) || result.index < 0 || result.index > 4 ||
+              prize?.rank !== result.index + 1 || typeof prize.title !== 'string' || !prize.title ||
+              typeof prize.description !== 'string' || !Number.isFinite(Date.parse(result.drawnAt))) {
+            reject(new Error('抽選結果を確認できません。同じ受付番号で再確認してください。'));
+            return;
+          }
+          resolve(result);
+        }).withFailureHandler(fail).drawPrize({ game, id, protocol: 3, campaignId: window.DrawRuntime.campaignId });
+      } catch (error) { fail(error); }
+    });
+  }
+
   function finish(container, game, id) {
     container.hidden = !id;
-    container.textContent = id ? `管理番号：${id}` : '';
+    container.textContent = id ? `受付番号：${id}` : '';
+    if (window.DrawRuntime?.protocol === 3) return; // 完了後も参加IDを保持して再送・複数タブを同じ結果へまとめる。
     if (id && pending.get(game) === id) {
       pending.delete(game);
       try { sessionStorage.removeItem(`draw-pending-v2:${game}`); } catch (_) { /* No persisted attempt exists. */ }
@@ -58,5 +87,6 @@ globalThis.DrawPrizes = [
     detail.textContent = prize.description;
   }
 
-  window.DrawLog = { choose, finish, render };
+  window.DrawLog = { choose, finish, render, newId };
 })();
+
