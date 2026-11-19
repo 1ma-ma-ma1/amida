@@ -4,7 +4,7 @@ const DRAW_TAB = '抽選履歴';
 const DRAW_HEADERS = ['抽選日時', '抽選方法', '抽選結果', '受付番号', '特典の付与'];
 const DRAW_CAMPAIGN = 'salon-amida-2026-01';
 // UIの確定したGitHubコミット。公開中のPagesや旧GASには依存しません。
-const DRAW_UI_REF = 'd01e4d4957e356e2d72f4ebb9b024f01adc4060a';
+const DRAW_UI_REF = 'af006effe782ee2f11db4367d358f4173728144d';
 const DRAW_SOURCE = 'https://raw.githubusercontent.com/1ma-ma-ma1/amida/' + DRAW_UI_REF + '/';
 const AMIDA_PRIZES = [
   { rank: 1, title: '10分延長', description: '（1320円引き）' },
