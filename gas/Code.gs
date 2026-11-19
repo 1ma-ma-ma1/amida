@@ -29,7 +29,12 @@ function doGet(event) {
   // 静的アセットはGitHub Pagesから配信し、抽選処理だけGASのgoogle.script.runを使用する。
   // HTML内の相対URLは絶対URLに置換。戻るリンクは本番GASのメニューへ。
   const base = DRAW_ASSETS + page.path;
+  // Force the latest GitHub scripts to load after a GAS deployment.
+  const assetVersion = '20261119-fix2';
   const html = source.replace('<head>', '<head><base target="_top"><script>window.DrawRecording = true;</script>')
+    .replace(/(<script\\s+[^>]*src="[^"]+\\.js)(?:\\?[^"]*)?(")/g, function(all, prefix, end) {
+      return prefix + '?gas_version=' + assetVersion + end;
+    })
     .replace(/(src|href)="([^"<>]+)"/g, function(full, attr, url) {
       if (url === '../#draw-menu' || (game === 'amida' && url === './')) {
         return attr + '="' + ScriptApp.getService().getUrl() + '"';
