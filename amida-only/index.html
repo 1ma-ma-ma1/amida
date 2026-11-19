@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#526657">
+  <meta name="description" content="リラクゼーションサロンの、ちいさなお楽しみ。5つの特典につながるあみだくじ。">
+  <title>癒やしのあみだくじ</title>
+  <link rel="icon" href="./leaf.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./style.css">
+  <script src="./project.js?v=amida-only-1" defer></script>
+  <script src="./draw-log.js?v=amida-only-1" defer></script>
+  <script src="./config.js?v=amida-only-1" defer></script>
+  <script src="./amida.js?v=amida-only-1" defer></script>
+  <script src="./storage.js?v=amida-only-1" defer></script>
+  <script src="./app.js?v=amida-only-1" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="./" aria-label="トップページ"><img src="./leaf.svg" width="34" height="34" alt=""><span id="salon-name">リラクゼーションサロン</span></a>
+    <span class="header-note">ご来店の、ちいさなお楽しみ。</span>
+  </header>
+
+  
+  <main>
+    <section class="intro" aria-labelledby="page-title">
+      <p class="eyebrow"><span></span> A LITTLE GIFT FOR YOU</p>
+      <h1 id="page-title">癒やしの時間に、<br>ちいさな<span class="accent">幸運</span>を。</h1>
+      <p class="intro-copy">今日のあなたに、どんなご褒美が届くでしょう。<br>気になるキャラクターをひとり選んで、<br class="desktop-break">ゆっくり、線の先へ。</p>
+      <div class="botanical" aria-hidden="true">
+        <svg viewBox="0 0 300 180" fill="none"><ellipse cx="145" cy="160" rx="109" ry="11" fill="#e9e9df"/><path d="M63 157C115 143 165 88 226 23M119 128C129 98 126 65 116 44M157 92C191 88 221 91 247 81" stroke="#869682" stroke-width="2"/><path d="M108 137C73 143 64 112 70 92C94 95 110 113 108 137ZM132 114C104 105 100 80 106 64C128 72 141 93 132 114ZM159 88C140 66 147 44 163 32C178 53 179 74 159 88ZM184 67C179 42 195 21 216 15C221 39 211 57 184 67ZM113 134C124 109 150 110 165 116C151 138 133 144 113 134ZM151 100C165 78 189 78 205 87C192 107 168 113 151 100ZM201 88C211 66 234 61 253 67C244 88 225 99 201 88Z" fill="#a9b6a0"/><path d="M70 155C56 139 35 137 24 145C38 163 55 167 70 155Z" fill="#c6cebc"/><circle cx="265" cy="38" r="3" fill="#b8995f"/><circle cx="46" cy="69" r="2" fill="#b8995f"/></svg>
+      </div>
+      <div class="gift-note"><span class="gift-symbol" aria-hidden="true">✧</span><div><strong>5つの特典、5つの出会い。</strong><p>どの道にも、あなたへの贈りもの。</p></div></div>
+    </section>
+
+    <section class="game-card" aria-labelledby="game-title">
+      <div class="card-heading"><div><p class="eyebrow">SALON AMIDA</p><h2 id="game-title">癒やしのあみだくじ</h2></div><span class="pill" id="preview-badge">お試し版</span></div>
+      <ol class="steps" aria-label="くじの流れ"><li class="current" id="step-1" aria-current="step"><span>1</span>えらぶ</li><li id="step-2"><span>2</span>たどる</li><li id="step-3"><span>3</span>うけとる</li></ol>
+      <p class="instruction" id="instruction" role="status" aria-live="polite">お好きなキャラクターを選んでください</p>
+      <div class="board-wrap" id="result-board" role="region" aria-label="あみだくじの道と特典" tabindex="-1">
+        <div class="choices" role="group" aria-label="キャラクターを選ぶ"></div>
+        <div class="ladder-stage"><div id="walker" aria-hidden="true" hidden></div><svg id="ladder" viewBox="0 0 500 300" preserveAspectRatio="none" role="img" aria-label="5本の縦線を横線でつないだあみだくじ"><g id="lines"></g><path id="trace" fill="none" stroke="#b08d50" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="destinations" id="destinations" role="list" aria-label="5つの特典の到着地点"></div>
+      </div>
+      <button class="primary-button" id="start" type="button" disabled>キャラクターを選んでください <span aria-hidden="true">→</span></button>
+      <p class="small-note" id="demo-note">お試しでお楽しみください。</p>
+      <p class="participation-note" id="participation-note"></p>
+      <noscript><p>あみだくじを使うには、ブラウザのJavaScriptを有効にしてください。</p></noscript>
+    </section>
+  </main>
+  <section class="howto" aria-labelledby="howto-title"><h2 id="howto-title">あそび方と特典について</h2><ul><li>5体のキャラクターから、好きな1体を選んでくじを引きます。</li><li>線をたどり、5つの特典のうち1つが表示されます。</li><li>結果画面をスクリーンショットで保存し、スタッフにお見せください。</li></ul></section>
+  <footer><span id="footer-name">RELAXATION SALON</span><p>こころも、からだも、ふっと軽く。</p></footer>
+  <dialog id="result-dialog" aria-labelledby="result-heading">
+    <div class="result-body"><p class="eyebrow">A GIFT FOR YOU</p><span id="result-icon" class="result-icon" aria-hidden="true"></span><p class="result-lead">あなたに届いたのは</p><span id="result-rank" class="award-rank" hidden></span><h2 id="result-heading"><span id="result-title"></span><span id="result-discount" class="award-detail" hidden></span></h2><p id="result-date" class="small-note"></p><div id="draw-log" class="small-note" hidden></div><p class="result-disclaimer" id="result-disclaimer"></p><button class="primary-button" id="close-result" type="button" autofocus>結果の道をみる <span aria-hidden="true">→</span></button><p class="small-note">この画面をスクリーンショットで保存し、スタッフにお見せください。</p><button class="retry-button" id="retry" type="button" hidden>もう一度引く ↻</button></div>
+  </dialog>
+</body>
+</html>
+
