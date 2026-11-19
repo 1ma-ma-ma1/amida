@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="ja"><meta charset="utf-8"><meta name="viewport" content="width=device-width">
+<title>専用あみだくじの接続確認</title>
+<script src="project.js?v=amida-only-2" defer></script>
+<h1>専用あみだくじの接続確認</h1>
+<button id="health">記録せずに接続確認</button><pre id="status" role="status">未確認</pre>
+<script>
+document.getElementById('health').onclick=async()=>{
+ const status=document.getElementById('status');status.textContent='確認中';
+ try{
+  const response=await fetch(AMIDA_PROJECT.webAppUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'health'}),credentials:'omit',redirect:'follow'});
+  const result=await response.json();
+  if(!result.success||result.campaignId!==AMIDA_PROJECT.campaignId)throw Error('企画の設定が一致しません');
+  status.textContent=JSON.stringify(result,null,2);
+ }catch(error){status.textContent='接続失敗：'+error.message;}
+};
+</script></html>
