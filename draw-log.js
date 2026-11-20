@@ -11,7 +11,8 @@ if (!window.DrawRuntime && !window.DrawLocalDemo) {
   window.DrawRecording = true;
   window.DrawRuntime = {
     protocol: 3, namespace: 'salon-nfc-json-2026', campaignId: 'salon-amida-2026-01',
-    testMode: true, // テスト終了時はfalseに戻す。GASでの結果確定・記録は継続する。
+    testMode: false,
+    singleChoice: true, // 4種類を通して同じブラウザで1回。参加情報は企画ごとに分離。
     transport: 'fetch', prizes: globalThis.DrawPrizes,
     endpoint: 'https://script.google.com/macros/s/AKfycbzYsk-IEGAhZC6UyCWJzD-M6z151uSnfevvK3tLltwV-iox81KMqbh_E7v7B69Wa7sX9w/exec'
   };
@@ -23,6 +24,21 @@ if (!window.DrawRuntime && !window.DrawLocalDemo) {
   const recorded = window.DrawRecording === true;
   const pending = new Map();
   const confirmed = new Set();
+  const gameNames = {amida:'あみだくじ',roulette:'ルーレット',kuji:'くじ引き',egg:'たまご抽選'};
+  const gamePaths = {amida:'https://1ma-ma-ma1.github.io/amida/',roulette:'https://1ma-ma-ma1.github.io/amida/roulette/',kuji:'https://1ma-ma-ma1.github.io/amida/kuji/',egg:'https://1ma-ma-ma1.github.io/amida/egg/'};
+  function choiceKey() {
+    return 'choice-v1:' + window.DrawRuntime.namespace + ':' + window.DrawRuntime.campaignId;
+  }
+  function selectionNotice(selection) {
+    if (typeof document === 'undefined') return;
+    const node = document.getElementById('draw-entry-notice');
+    if (!node || !gameNames[selection?.game]) return;
+    node.textContent = 'この企画で選択した抽選：' + gameNames[selection.game] + '。';
+    const link = document.createElement('a');
+    link.href = gamePaths[selection.game] + '?v=single20261120';
+    link.textContent = '続き・結果を確認する';
+    node.append(link);
+  }
   function attemptKey(game) {
     return 'gas-v3:' + window.DrawRuntime.namespace + ':' + window.DrawRuntime.campaignId + (game === 'amida' ? '' : ':' + game);
   }
@@ -30,7 +46,16 @@ if (!window.DrawRuntime && !window.DrawLocalDemo) {
     if (!window.DrawRuntime?.testMode || !confirmed.has(game + ':' + id)) throw new Error('確定済みのテスト結果だけ再抽選できます。');
     return DrawStore.release(attemptKey(game), id);
   }
-  if (typeof document !== 'undefined') document.addEventListener('DOMContentLoaded', () => {
+  if (typeof document !== 'undefined') document.addEventListener('DOMContentLoaded', async () => {
+    if (window.DrawRuntime?.singleChoice && !window.DrawRuntime.testMode) {
+      const note = document.createElement('p');
+      note.id = 'draw-entry-notice';
+      note.textContent = 'この企画は、このブラウザで4種類のうち1種類を1回だけ抽選できます。';
+      note.style.cssText = 'margin:12px auto;padding:12px;max-width:640px;text-align:center;background:#eef2e8;color:#34483d;border-radius:10px;font-size:13px';
+      document.body.prepend(note);
+      try { selectionNotice(await DrawStore.read(choiceKey())); }
+      catch (_) { note.textContent = '参加記録を確認できません。通常のブラウザで開き直してください。'; }
+    }
     if (!window.DrawRuntime?.testMode) return;
     const note = document.createElement('p');
     note.id = 'draw-test-notice';
@@ -54,11 +79,21 @@ if (!window.DrawRuntime && !window.DrawLocalDemo) {
 
   async function choose(game, localIndex, stableId) {
     if (window.DrawRuntime?.protocol === 3) {
+      if (!prefixes[game]) throw new Error('抽選方法が不正です。');
       if (!stableId) {
         if (!prefixes[game]) throw new Error('抽選方法が不正です。');
         const key = attemptKey(game);
         const attempt = await DrawStore.claim(key, { id: newId(game) });
         stableId = attempt.record.id;
+      }
+      if (!new RegExp('^' + prefixes[game] + '[A-F0-9]{32}$').test(stableId)) throw new Error('参加記録が不正です。');
+      if (window.DrawRuntime.singleChoice && !window.DrawRuntime.testMode) {
+        const chosen = await DrawStore.claim(choiceKey(), {game, id:stableId});
+        const entry = chosen.record;
+        selectionNotice(entry);
+        if (!gameNames[entry?.game] || entry.game !== game || entry.id !== stableId) {
+          throw new Error('この企画はすでに抽選方法を選択しています。画面上部のリンクから続き・結果をご確認ください。');
+        }
       }
       return chooseAmida(stableId, game);
     }
