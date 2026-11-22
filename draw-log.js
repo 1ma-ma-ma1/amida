@@ -11,7 +11,7 @@ if (!window.DrawRuntime && !window.DrawLocalDemo) {
   window.DrawRecording = true;
   window.DrawRuntime = {
     protocol: 3, namespace: 'salon-nfc-json-2026', campaignId: 'salon-amida-2026-01',
-    testMode: false,
+    testMode: true,
     singleChoice: true, // 4種類を通して同じブラウザで1回。参加情報は企画ごとに分離。
     transport: 'fetch', prizes: globalThis.DrawPrizes,
     endpoint: 'https://script.google.com/macros/s/AKfycbzYsk-IEGAhZC6UyCWJzD-M6z151uSnfevvK3tLltwV-iox81KMqbh_E7v7B69Wa7sX9w/exec'
