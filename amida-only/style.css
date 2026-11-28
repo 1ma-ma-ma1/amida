@@ -131,7 +131,7 @@
 
 /* Illustrated rewards share the same proportions on the board and in the result. */
 /* 参照の4体と同じ世界観の犬。1枚の等間隔5列アトラスを選択・移動に共用。 */
-.mascot--sprite { width:clamp(38px,11vw,60px);height:auto;aspect-ratio:3/5;background-image:url('./characters.png?v=amida-only-3');background-repeat:no-repeat;background-size:500% 100%; }
+.mascot--sprite { width:clamp(38px,11vw,60px);height:auto;aspect-ratio:3/5;background-image:url('./characters.webp');background-repeat:no-repeat;background-size:500% 100%; }
 .mascot--bear { background-position:0% 0; }
 .mascot--pig { background-position:25% 0; }
 .mascot--panda { background-position:50% 0; }

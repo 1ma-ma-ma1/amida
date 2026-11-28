@@ -53,8 +53,18 @@
   }
   const storageKey = "live:" + config.campaignId;
   const attemptKey = "gas-v3:" + window.DrawRuntime?.namespace + ":" + config.campaignId;
+  const resultKey = id => attemptKey + ":result:" + id;
+  async function confirmedResult(id) {
+    const key = resultKey(id);
+    const saved = await DrawStore.read(key);
+    if (saved?.id === id) return saved;
+    const result = await DrawLog.choose("amida", 0, id);
+    // この端末には、サーバーが記録を確定した応答だけを保存する。
+    try { await DrawStore.claim(key, result); } catch (_) { /* 次回はサーバーで照合する。 */ }
+    return result;
+  }
   let attempt = null;
-  $("participation-note").textContent = "もう一度抽選するときは、あみだくじ専用コードを読み取ってください。";
+  $("participation-note").textContent = "もう一度抽選するときは、専用NFCタグかQRコードを読み取ってください。";
   $("retry").hidden = !config.demo;
   $("salon-name").textContent = config.salonName;
   $("footer-name").textContent = config.salonName;
@@ -269,7 +279,7 @@
       const result = Amida.route(selected, board.bridges);
       let selection;
       try {
-        selection = await DrawLog.choose("amida", board.prizes[result.end], attempt?.id);
+        selection = live ? await confirmedResult(attempt.id) : await DrawLog.choose("amida", board.prizes[result.end]);
       } catch (error) {
         stopMotion();
         state = "choosing";
@@ -344,12 +354,12 @@
           $("instruction").textContent = "前回の抽選を確認しています…";
           try {
             // 応答が失われた抽選も同じ受付番号で確認してから参加枠を空ける。
-            await DrawLog.choose("amida", 0, attempt.id);
+            await confirmedResult(attempt.id);
             await DrawStore.release(attemptKey, attempt.id);
             attempt = await DrawStore.read(attemptKey);
           } catch (_) {
             failClosed();
-            $("instruction").textContent = "前回の抽選を確認できませんでした。通信が安定してから専用コードを読み直してください。";
+            $("instruction").textContent = "前回の抽選を確認できませんでした。通信が安定してからタグかQRコードを読み直してください。";
             return;
           }
         }
