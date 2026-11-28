@@ -54,7 +54,7 @@
   const storageKey = "live:" + config.campaignId;
   const attemptKey = "gas-v3:" + window.DrawRuntime?.namespace + ":" + config.campaignId;
   let attempt = null;
-  $("participation-note").textContent = (config.demo || window.DrawRuntime?.testMode) ? "テスト期間中は結果画面から何度でも抽選できます。" : "参加はこのブラウザで1回限り。再アクセスで結果を確認できます。";
+  $("participation-note").textContent = "もう一度抽選するときは、あみだくじ専用コードを読み取ってください。";
   $("retry").hidden = !config.demo;
   $("salon-name").textContent = config.salonName;
   $("footer-name").textContent = config.salonName;
@@ -332,7 +332,27 @@
         newDraw();
         choices.forEach(b => b.disabled = true);
         state = "loading";
+        const entryUrl = new URL(window.location.href);
+        const fromCode = entryUrl.searchParams.get("scan") === "1";
+        if (fromCode) {
+          // 再読み込みや戻る操作で、コード入口をもう一度実行しない。
+          entryUrl.searchParams.delete("scan");
+          window.history.replaceState(null, "", entryUrl);
+        }
         attempt = await DrawStore.read(attemptKey);
+        if (fromCode && attempt) {
+          $("instruction").textContent = "前回の抽選を確認しています…";
+          try {
+            // 応答が失われた抽選も同じ受付番号で確認してから参加枠を空ける。
+            await DrawLog.choose("amida", 0, attempt.id);
+            await DrawStore.release(attemptKey, attempt.id);
+            attempt = await DrawStore.read(attemptKey);
+          } catch (_) {
+            failClosed();
+            $("instruction").textContent = "前回の抽選を確認できませんでした。通信が安定してから専用コードを読み直してください。";
+            return;
+          }
+        }
         if (attempt) {
           board = attempt.board;
           selected = attempt.selected;
@@ -341,6 +361,7 @@
         } else {
           state = "choosing";
           choices.forEach(b => b.disabled = false);
+          if (fromCode) $("instruction").textContent = "抽選できます。お好きなキャラクターを選んでください。";
         }
         return;
       }
